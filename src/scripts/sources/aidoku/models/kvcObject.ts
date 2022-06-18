@@ -1,3 +1,3 @@
 export interface KVCObject {
-    valueByPropertyName(propertyName: string): any;
+	valueByPropertyName(propertyName: string): any;
 }

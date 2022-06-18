@@ -1,13 +1,14 @@
 class Listing {
-    name: string;
+	name: string;
 
-    constructor(name: string) {
-        this.name = name;
-    }
+	constructor(name: string) {
+		this.name = name;
+	}
 
-    valueByPropertyName(propertyName: string): any {
-        switch (propertyName) {
-            case 'name': return this.name;
-        }
-    }
+	valueByPropertyName(propertyName: string): any {
+		switch (propertyName) {
+			case 'name':
+				return this.name;
+		}
+	}
 }
