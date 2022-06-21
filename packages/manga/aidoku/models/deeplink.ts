@@ -1,4 +1,5 @@
-class DeepLink {
+import { Chapter } from "./chapter";
+export class DeepLink {
 	manga: Manga;
 	chapter: Chapter;
 

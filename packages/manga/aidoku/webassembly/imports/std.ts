@@ -1,6 +1,5 @@
 import moment from 'moment-timezone';
-import type { Imports } from '../imports';
-import type { Wasm } from '../wasm';
+import { Wasm } from '../wasm';
 
 export enum ObjectType {
 	null = 0,
@@ -15,8 +14,8 @@ export enum ObjectType {
 	unknown = 9
 }
 
-export class Std implements Imports {
-	getExports(): object {
+export class Std {
+	static getExports(): WebAssembly.ModuleImports {
 		return {
 			copy: this.copy,
 			destroy: this.destroy,
@@ -30,7 +29,7 @@ export class Std implements Imports {
 			create_object: this.create_object,
 			create_date: this.create_date,
 
-			typeof: this.typeof,
+			typeof: this.type_of,
 			string_len: this.string_len,
 			read_string: this.read_string,
 			read_int: this.read_int,
@@ -53,70 +52,65 @@ export class Std implements Imports {
 			array_remove: this.array_remove
 		};
 	}
-	getNamespace(): string {
+	static getNamespace(): string {
 		return 'std';
 	}
 
-	wasm: Wasm;
-	constructor(wasm: Wasm) {
-		this.wasm = wasm;
-	}
-
-	copy(descriptor: number): number {
+	static copy(descriptor: number): number {
 		if (descriptor < 0) {
 			return -1;
 		}
-		return this.wasm.storeStdValue(this.wasm.readStdValue(descriptor));
+		return Wasm.storeStdValue(Wasm.readStdValue(descriptor));
 	}
 
-	destroy(descriptor: number): void {
+	static destroy(descriptor: number): void {
 		if (descriptor < 0) {
 			return;
 		}
-		this.wasm.removeStdValue(descriptor);
+		Wasm.removeStdValue(descriptor);
 	}
 
-	create_null(): number {
-		return this.wasm.storeStdValue(null);
+	static create_null(): number {
+		return Wasm.storeStdValue(null);
 	}
 
-	create_int(int: number): number {
-		return this.wasm.storeStdValue(int);
+	static create_int(int: number): number {
+		return Wasm.storeStdValue(int);
 	}
 
-	create_float(float: number): number {
-		return this.wasm.storeStdValue(float);
+	static create_float(float: number): number {
+		return Wasm.storeStdValue(float);
 	}
 
-	create_string(string: number, length: number): number {
+	static create_string(string: number, length: number): number {
 		if (length <= 0) {
 			return -1;
 		}
-		let stringString = this.wasm.readString(string, length);
-		return this.wasm.storeStdValue(stringString);
+		let stringString = Wasm.readString(string, length);
+		return Wasm.storeStdValue(stringString);
 	}
 
-	create_bool(bool: number): number {
-		return this.wasm.storeStdValue(bool != 0);
+	static create_bool(bool: number): number {
+		return Wasm.storeStdValue(bool != 0);
 	}
 
-	create_object(): number {
-		return this.wasm.storeStdValue({});
+	static create_object(): number {
+		return Wasm.storeStdValue({});
 	}
 
-	create_array(): number {
-		return this.wasm.storeStdValue([]);
+	static create_array(): number {
+		return Wasm.storeStdValue([]);
 	}
 
-	create_date(date: number): number {
-		return this.wasm.storeStdValue(date < 0 ? new Date() : new Date(date));
+	static create_date(date: number): number {
+		return Wasm.storeStdValue(date < 0 ? new Date() : new Date(date));
 	}
 
-	typeof(descriptor: number): number {
+	static type_of(descriptor: number): number {
 		if (descriptor < 0) {
 			return ObjectType.null;
 		}
-		let value = this.wasm.readStdValue(descriptor);
+		let value = Wasm.readStdValue(descriptor);
 		if (value === null) {
 			return ObjectType.null;
 		}
@@ -149,22 +143,22 @@ export class Std implements Imports {
 		}
 	}
 
-	string_len(descriptor: number): number {
+	static string_len(descriptor: number): number {
 		if (descriptor < 0) {
 			return -1;
 		}
-		let value = this.wasm.readStdValue(descriptor);
+		let value = Wasm.readStdValue(descriptor);
 		if (value === null) {
 			return -1;
 		}
 		return value.length;
 	}
 
-	read_string(descriptor: number, buffer: number, size: number): void {
+	static read_string(descriptor: number, buffer: number, size: number): void {
 		if (descriptor < 0 || size < 0) {
 			return;
 		}
-		let value = this.wasm.readStdValue(descriptor);
+		let value = Wasm.readStdValue(descriptor);
 		if (value === null) {
 			return;
 		}
@@ -172,15 +166,15 @@ export class Std implements Imports {
 			return;
 		}
 		if (size <= value.length) {
-			this.wasm.writeString(buffer, value.substring(0, size));
+			Wasm.writeString(buffer, value.substring(0, size));
 		}
 	}
 
-	read_int(descriptor: number): number {
+	static read_int(descriptor: number): number {
 		if (descriptor < 0) {
 			return -1;
 		}
-		let value = this.wasm.readStdValue(descriptor);
+		let value = Wasm.readStdValue(descriptor);
 		if (typeof value === 'number') {
 			if (Number.isInteger(value)) {
 				return value;
@@ -196,11 +190,11 @@ export class Std implements Imports {
 		return -1;
 	}
 
-	read_float(descriptor: number): number {
+	static read_float(descriptor: number): number {
 		if (descriptor < 0) {
 			return -1;
 		}
-		let value = this.wasm.readStdValue(descriptor);
+		let value = Wasm.readStdValue(descriptor);
 		if (typeof value === 'number') {
 			if (Number.isInteger(value)) {
 				return value;
@@ -213,22 +207,22 @@ export class Std implements Imports {
 		return -1;
 	}
 
-	read_bool(descriptor: number): number {
+	static read_bool(descriptor: number): number {
 		if (descriptor < 0) {
 			return -1;
 		}
-		let value = this.wasm.readStdValue(descriptor);
+		let value = Wasm.readStdValue(descriptor);
 		if (typeof value === 'boolean' || typeof value === 'number') {
 			return value ? 1 : 0;
 		}
 		return 0;
 	}
 
-	read_date(descriptor: number): number {
+	static read_date(descriptor: number): number {
 		if (descriptor < 0) {
 			return -1;
 		}
-		let value = this.wasm.readStdValue(descriptor);
+		let value = Wasm.readStdValue(descriptor);
 		if (typeof value === 'number') {
 			return value;
 		}
@@ -238,7 +232,7 @@ export class Std implements Imports {
 		return -1;
 	}
 
-	read_date_string(
+	static read_date_string(
 		descriptor: number,
 		format: number,
 		formatLen: number,
@@ -250,13 +244,13 @@ export class Std implements Imports {
 		if (descriptor < 0 || formatLen <= 0) {
 			return -1;
 		}
-		let value = this.wasm.readStdValue(descriptor);
+		let value = Wasm.readStdValue(descriptor);
 		if (typeof value !== 'string') {
 			return -1;
 		}
-		let formatString = this.wasm.readString(format, formatLen);
-		let localeString = localeLen > 0 ? this.wasm.readString(locale, localeLen) : undefined;
-		let timeZoneString = timeZoneLen > 0 ? this.wasm.readString(timeZone, timeZoneLen) : undefined;
+		let formatString = Wasm.readString(format, formatLen);
+		let localeString = localeLen > 0 ? Wasm.readString(locale, localeLen) : undefined;
+		let timeZoneString = timeZoneLen > 0 ? Wasm.readString(timeZone, timeZoneLen) : undefined;
 		let time = moment(value, formatString, localeString);
 		if (timeZoneString) {
 			time = time.tz(timeZoneString);
@@ -264,137 +258,137 @@ export class Std implements Imports {
 		return time.valueOf();
 	}
 
-	object_len(descriptor: number): number {
+	static object_len(descriptor: number): number {
 		if (descriptor < 0) {
 			return -1;
 		}
-		let value = this.wasm.readStdValue(descriptor);
+		let value = Wasm.readStdValue(descriptor);
 		if (typeof value !== 'object') {
 			return -1;
 		}
 		return Object.keys(value).length;
 	}
 
-	object_get(descriptor: number, key: number, keyLen: number): number {
+	static object_get(descriptor: number, key: number, keyLen: number): number {
 		if (descriptor < 0 || keyLen <= 0) {
 			return -1;
 		}
-		let value = this.wasm.readStdValue(descriptor);
+		let value = Wasm.readStdValue(descriptor);
 		if (typeof value !== 'object') {
 			return -1;
 		}
-		let keyString = this.wasm.readString(key, keyLen);
-		return this.wasm.storeStdValue(value[keyString]);
+		let keyString = Wasm.readString(key, keyLen);
+		return Wasm.storeStdValue(value[keyString]);
 	}
 
-	object_set(descriptor: number, key: number, keyLen: number, value: number): void {
+	static object_set(descriptor: number, key: number, keyLen: number, value: number): void {
 		if (descriptor < 0 || keyLen < 0 || value < 0) {
 			return;
 		}
-		let object = this.wasm.readStdValue(descriptor);
+		let object = Wasm.readStdValue(descriptor);
 		if (typeof object !== 'object') {
 			return;
 		}
-		let keyString = this.wasm.readString(key, keyLen);
-		object[keyString] = this.wasm.readStdValue(value);
-		this.wasm.stdDescriptors.set(descriptor, object);
-		this.wasm.addStdReference(descriptor, value);
+		let keyString = Wasm.readString(key, keyLen);
+		object[keyString] = Wasm.readStdValue(value);
+		Wasm.stdDescriptors.set(descriptor, object);
+		Wasm.addStdReference(descriptor, value);
 	}
 
-	object_remove(descriptor: number, key: number, keyLen: number): void {
+	static object_remove(descriptor: number, key: number, keyLen: number): void {
 		if (descriptor < 0 || keyLen < 0) {
 			return;
 		}
-		let object = this.wasm.readStdValue(descriptor);
+		let object = Wasm.readStdValue(descriptor);
 		if (typeof object !== 'object') {
 			return;
 		}
-		let keyString = this.wasm.readString(key, keyLen);
+		let keyString = Wasm.readString(key, keyLen);
 		delete object[keyString];
-		this.wasm.stdDescriptors.set(descriptor, object);
+		Wasm.stdDescriptors.set(descriptor, object);
 	}
 
-	object_keys(descriptor: number): number {
+	static object_keys(descriptor: number): number {
 		if (descriptor < 0) {
 			return -1;
 		}
-		let value = this.wasm.readStdValue(descriptor);
+		let value = Wasm.readStdValue(descriptor);
 		if (typeof value !== 'object') {
 			return -1;
 		}
 		let keys = Object.keys(value);
-		return this.wasm.storeStdValue(keys, descriptor);
+		return Wasm.storeStdValue(keys, descriptor);
 	}
 
-	object_values(descriptor: number): number {
+	static object_values(descriptor: number): number {
 		if (descriptor < 0) {
 			return -1;
 		}
-		let value = this.wasm.readStdValue(descriptor);
+		let value = Wasm.readStdValue(descriptor);
 		if (typeof value !== 'object') {
 			return -1;
 		}
 		let values = Object.values(value);
-		return this.wasm.storeStdValue(values, descriptor);
+		return Wasm.storeStdValue(values, descriptor);
 	}
 
-	array_len(descriptor: number): number {
+	static array_len(descriptor: number): number {
 		if (descriptor < 0) {
 			return -1;
 		}
-		let value = this.wasm.readStdValue(descriptor);
+		let value = Wasm.readStdValue(descriptor);
 		if (typeof value !== 'object') {
 			return -1;
 		}
 		return value.length;
 	}
 
-	array_get(descriptor: number, index: number): number {
+	static array_get(descriptor: number, index: number): number {
 		if (descriptor < 0 || index < 0) {
 			return -1;
 		}
-		let value = this.wasm.readStdValue(descriptor);
+		let value = Wasm.readStdValue(descriptor);
 		if (typeof value !== 'object') {
 			return -1;
 		}
-		return this.wasm.storeStdValue(value[index], descriptor);
+		return Wasm.storeStdValue(value[index], descriptor);
 	}
 
-	array_set(descriptor: number, index: number, value: number): void {
+	static array_set(descriptor: number, index: number, value: number): void {
 		if (descriptor < 0 || index < 0 || value < 0) {
 			return;
 		}
-		let array = this.wasm.readStdValue(descriptor);
+		let array = Wasm.readStdValue(descriptor);
 		if (typeof array !== 'object') {
 			return;
 		}
-		array[index] = this.wasm.readStdValue(value);
-		this.wasm.stdDescriptors.set(descriptor, array);
-		this.wasm.addStdReference(descriptor, value);
+		array[index] = Wasm.readStdValue(value);
+		Wasm.stdDescriptors.set(descriptor, array);
+		Wasm.addStdReference(descriptor, value);
 	}
 
-	array_append(descriptor: number, value: number): void {
+	static array_append(descriptor: number, value: number): void {
 		if (descriptor < 0 || value < 0) {
 			return;
 		}
-		let array = this.wasm.readStdValue(descriptor);
+		let array = Wasm.readStdValue(descriptor);
 		if (typeof array !== 'object') {
 			return;
 		}
-		array.push(this.wasm.readStdValue(value));
-		this.wasm.stdDescriptors.set(descriptor, array);
-		this.wasm.addStdReference(descriptor, value);
+		array.push(Wasm.readStdValue(value));
+		Wasm.stdDescriptors.set(descriptor, array);
+		Wasm.addStdReference(descriptor, value);
 	}
 
-	array_remove(descriptor: number, index: number): void {
+	static array_remove(descriptor: number, index: number): void {
 		if (descriptor < 0 || index < 0) {
 			return;
 		}
-		let array = this.wasm.readStdValue(descriptor);
+		let array = Wasm.readStdValue(descriptor);
 		if (typeof array !== 'object') {
 			return;
 		}
 		array.splice(index, 1);
-		this.wasm.stdDescriptors.set(descriptor, array);
+		Wasm.stdDescriptors.set(descriptor, array);
 	}
 }

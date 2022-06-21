@@ -1,3 +1,0 @@
-webassembly/imports/net - add cookies to modifyRequest, cloudflare in performRequest
-
-change typeof to handle array of JQuery.Node, change html to deal with fragments this way

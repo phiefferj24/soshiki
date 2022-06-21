@@ -1,4 +1,4 @@
-enum MangaStatus {
+export enum MangaStatus {
 	unknown = 0,
 	ongoing = 1,
 	completed = 2,
@@ -6,13 +6,13 @@ enum MangaStatus {
 	hiatus = 4
 }
 
-enum MangaContentRating {
+export enum MangaContentRating {
 	safe = 0,
 	suggestive = 1,
 	nsfw = 2
 }
 
-enum MangaViewer {
+export enum MangaViewer {
 	defaultViewer = 0,
 	rtl = 1,
 	ltr = 2,
@@ -20,7 +20,7 @@ enum MangaViewer {
 	scroll = 4
 }
 
-class Manga {
+export class Manga {
 	sourceId: string;
 	id: string;
 	title: string;
@@ -102,7 +102,7 @@ class Manga {
 	}
 }
 
-class MangaPageResult {
+export class MangaPageResult {
 	manga: Manga[];
 	hasNextPage: boolean;
 

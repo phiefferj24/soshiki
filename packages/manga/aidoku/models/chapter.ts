@@ -1,4 +1,4 @@
-class Chapter {
+export class Chapter {
 	sourceId: string;
 	id: string;
 	mangaId: string;

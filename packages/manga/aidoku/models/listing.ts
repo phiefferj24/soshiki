@@ -1,4 +1,4 @@
-class Listing {
+export class Listing {
 	name: string;
 
 	constructor(name: string) {

@@ -1,4 +1,4 @@
-class Page {
+export class Page {
 	index: number;
 	imageUrl: string;
 	base64: string;

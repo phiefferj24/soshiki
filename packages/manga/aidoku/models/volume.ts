@@ -1,4 +1,5 @@
-class Volume {
+import { Chapter } from './chapter';
+export class Volume {
 	title: string;
 	sortNumber: number;
 	chapters: Chapter[];

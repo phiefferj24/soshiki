@@ -1,6 +1,5 @@
 import type { KVCObject } from '../../models/kvcObject';
-import type { Imports } from '../imports';
-import type { Wasm } from '../wasm';
+import { Wasm } from '../wasm';
 import type { Optional } from '../../models/optional';
 
 export enum HttpMethod {
@@ -11,9 +10,7 @@ export enum HttpMethod {
 	DELETE = 4
 }
 
-export class Net implements Imports {
-	wasm: Wasm;
-
+export class Net {
 	rateLimit: number = -1;
 	period: number = 60;
 	lastRequestTime: Optional<Date>;
@@ -22,13 +19,10 @@ export class Net implements Imports {
 	defaultUserAgent =
 		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 Edg/88.0.705.63';
 
-	constructor(wasm: Wasm) {
-		this.wasm = wasm;
-	}
-	getNamespace(): string {
+	static getNamespace(): string {
 		return 'net';
 	}
-	getExports(): object {
+	static getExports(): WebAssembly.ModuleImports {
 		return {
 			init: this.init_request,
 			send: this.send,
@@ -97,58 +91,58 @@ export class Net implements Imports {
 		}
 	}
 
-	init_request(method: number): number {
-		this.wasm.requestsPointer += 1;
-		let request = new RequestObject(this.wasm.requestsPointer);
+	static init_request(method: number): number {
+		Wasm.requestsPointer += 1;
+		let request = new RequestObject(Wasm.requestsPointer);
 		request.method = method;
-		this.wasm.requests.set(this.wasm.requestsPointer, request);
-		return this.wasm.requestsPointer;
+		Wasm.requests.set(Wasm.requestsPointer, request);
+		return Wasm.requestsPointer;
 	}
 
-	close(descriptor: number): void {
+	static close(descriptor: number): void {
 		if (descriptor >= 0) {
-			this.wasm.requests.delete(descriptor);
+			Wasm.requests.delete(descriptor);
 		}
 	}
 
-	set_url(descriptor: number, value: number, length: number): void {
-		if (descriptor >= 0 && length > 0 && this.wasm.requests.has(descriptor)) {
-			this.wasm.requests.get(descriptor)!.url = this.wasm.readString(value, length);
+	static set_url(descriptor: number, value: number, length: number): void {
+		if (descriptor >= 0 && length > 0 && Wasm.requests.has(descriptor)) {
+			Wasm.requests.get(descriptor)!.url = Wasm.readString(value, length);
 		}
 	}
 
-	set_header(
+	static set_header(
 		descriptor: number,
 		key: number,
 		keyLen: number,
 		value: number,
 		valueLen: number
 	): void {
-		if (descriptor >= 0 && keyLen > 0 && valueLen > 0 && this.wasm.requests.has(descriptor)) {
-			this.wasm.requests
+		if (descriptor >= 0 && keyLen > 0 && valueLen > 0 && Wasm.requests.has(descriptor)) {
+			Wasm.requests
 				.get(descriptor)!
-				.headers.set(this.wasm.readString(key, keyLen), this.wasm.readString(value, valueLen));
+				.headers.set(Wasm.readString(key, keyLen), Wasm.readString(value, valueLen));
 		}
 	}
 
-	set_body(descriptor: number, value: number, length: number): void {
-		if (descriptor >= 0 && length > 0 && this.wasm.requests.has(descriptor)) {
-			this.wasm.requests.get(descriptor)!.body = this.wasm.readBytes(value, length);
+	static set_body(descriptor: number, value: number, length: number): void {
+		if (descriptor >= 0 && length > 0 && Wasm.requests.has(descriptor)) {
+			Wasm.requests.get(descriptor)!.body = Wasm.readBytes(value, length);
 		}
 	}
 
-	set_rate_limit(limit: number) {
-		this.rateLimit = limit;
+	static set_rate_limit(limit: number) {
+		Wasm.networkInstances.get(Wasm.currentSource).rateLimit = limit;
 	}
 
-	set_rate_limit_period(period: number) {
-		this.period = period;
+	static set_rate_limit_period(period: number) {
+		Wasm.networkInstances.get(Wasm.currentSource).period = period;
 	}
 
-	send(descriptor: number): void {
-		if (this.wasm.requests.has(descriptor) && this.wasm.requests.get(descriptor)!.url) {
+	static send(descriptor: number): void {
+		if (Wasm.requests.has(descriptor) && Wasm.requests.get(descriptor)!.url) {
 			let method;
-			switch (this.wasm.requests.get(descriptor)!.method) {
+			switch (Wasm.requests.get(descriptor)!.method) {
 				case HttpMethod.GET:
 					method = 'GET';
 					break;
@@ -169,9 +163,9 @@ export class Net implements Imports {
 					break;
 			}
 			let xhr = new XMLHttpRequest();
-			xhr.open(method, this.wasm.requests.get(descriptor)!.url!, false);
+			xhr.open(method, Wasm.requests.get(descriptor)!.url!, false);
 			xhr.responseType = 'arraybuffer';
-			xhr.send(this.wasm.requests.get(descriptor)!.body);
+			xhr.send(Wasm.requests.get(descriptor)!.body);
 			let headers = new Map<string, string>();
 			for (let [key, value] of xhr
 				.getAllResponseHeaders()
@@ -181,53 +175,53 @@ export class Net implements Imports {
 				headers.set(key, value);
 			}
 			let responseObject = new ResponseObject(xhr.status, new Uint8Array(xhr.response), headers);
-			this.wasm.requests.get(descriptor)!.response = responseObject;
+			Wasm.requests.get(descriptor)!.response = responseObject;
 		}
 	}
 
-	get_url(descriptor: number): number {
-		if (this.wasm.requests.has(descriptor) && this.wasm.requests.get(descriptor)!.url) {
-			return this.wasm.storeStdValue(this.wasm.requests.get(descriptor)!.url);
-		}
-		return -1;
-	}
-
-	get_data_size(descriptor: number): number {
-		if (this.wasm.requests.has(descriptor) && this.wasm.requests.get(descriptor)!.response?.data) {
-			return this.wasm.requests.get(descriptor)!.response!.bytesRead;
+	static get_url(descriptor: number): number {
+		if (Wasm.requests.has(descriptor) && Wasm.requests.get(descriptor)!.url) {
+			return Wasm.storeStdValue(Wasm.requests.get(descriptor)!.url);
 		}
 		return -1;
 	}
 
-	get_data(descriptor: number, buffer: number, size: number): void {
+	static get_data_size(descriptor: number): number {
+		if (Wasm.requests.has(descriptor) && Wasm.requests.get(descriptor)!.response?.data) {
+			return Wasm.requests.get(descriptor)!.response!.bytesRead;
+		}
+		return -1;
+	}
+
+	static get_data(descriptor: number, buffer: number, size: number): void {
 		if (!(descriptor >= 0 && size > 0)) {
 			return;
 		}
-		if (this.wasm.requests.has(descriptor) && this.wasm.requests.get(descriptor)!.response?.data) {
-			let response = this.wasm.requests.get(descriptor)!.response!;
+		if (Wasm.requests.has(descriptor) && Wasm.requests.get(descriptor)!.response?.data) {
+			let response = Wasm.requests.get(descriptor)!.response!;
 			if (response.bytesRead + size > response.data!.length) {
 				return;
 			}
 			let result = response.data!.slice(response.bytesRead, response.bytesRead + size);
-			this.wasm.writeBytes(buffer, result);
+			Wasm.writeBytes(buffer, result);
 			response.bytesRead += size;
 		}
 	}
 
-	json(descriptor: number): number {
-		if (this.wasm.requests.has(descriptor) && this.wasm.requests.get(descriptor)!.response?.data) {
-			let response = this.wasm.requests.get(descriptor)!.response!;
+	static json(descriptor: number): number {
+		if (Wasm.requests.has(descriptor) && Wasm.requests.get(descriptor)!.response?.data) {
+			let response = Wasm.requests.get(descriptor)!.response!;
 			let result = JSON.parse(String.fromCharCode(...response.data!));
-			return this.wasm.storeStdValue(result);
+			return Wasm.storeStdValue(result);
 		}
 		return -1;
 	}
 
-	html(descriptor: number): number {
-		if (this.wasm.requests.has(descriptor) && this.wasm.requests.get(descriptor)!.response?.data) {
-			let response = this.wasm.requests.get(descriptor)!.response;
+	static html(descriptor: number): number {
+		if (Wasm.requests.has(descriptor) && Wasm.requests.get(descriptor)!.response?.data) {
+			let response = Wasm.requests.get(descriptor)!.response;
 			let html = $.parseHTML(String.fromCharCode(...response!.data!))[0];
-			return this.wasm.storeStdValue(html);
+			return Wasm.storeStdValue(html);
 		}
 		return -1;
 	}
