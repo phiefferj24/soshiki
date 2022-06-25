@@ -3,11 +3,14 @@
     "name": "soshiki",
     "workspaces": [
         "site",
-        "packages/*",
-        "packages/*/*"
+        "packages/**/*"
     ],
     "scripts": {
-        "site:dev": "cd site && npm run dev",
-        "site:dev:open": "cd site && npm run dev -- --open"
+        "site": "yarn workspace soshiki-site dev",
+        "site:open": "yarn workspace soshiki-site dev --open"
+    },
+    "packageManager": "yarn@3.2.1",
+    "devDependencies": {
+        "@zip.js/zip.js": "^2.4.20"
     }
 }

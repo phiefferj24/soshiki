@@ -1,35 +1,50 @@
 <script lang="ts">
-    import type { FilterBase } from "soshiki-aidoku/models/filter";
-    import type { Optional } from "soshiki-aidoku/models/optional";
-    import { Wasm } from "soshiki-aidoku/webassembly/wasm";
-    import type { MangaPageResult } from "soshiki-aidoku/models/manga"
-
-    const AIDOKU_BASE = "https://raw.githubusercontent.com/Aidoku/Sources/gh-pages"
-    let sources: Promise<{[key: string]: string}[]> = fetch(AIDOKU_BASE + "/index.json").then(r => r.json());
-
-    let installed: Wasm[] = []
-    let res: MangaPageResult
-
-    async function handleClick(source: {[key: string]: string}) {
-        installed.push(await Wasm.start("main.wasm"))
-        let fd = installed[0].storeStdValue([] as FilterBase[]);
-        let pld = (installed[0].instance?.exports as any).get_manga_list(fd, 1)
-        res = installed[0].readStdValue(pld) as MangaPageResult
-        installed[0].removeStdValue(pld)
-        installed[0].removeStdValue(fd)
+	import { AidokuSource } from 'aidoku-ts/aidokuSource';
+    import Header from "../lib/Header.svelte";
+    import { Wasm } from "aidoku-ts/webassembly/wasm";
+    import type { MangaPageResult } from "aidoku-ts/models/manga";
+    import ListingCard, { ListingType } from "$lib/listing/ListingCard.svelte";
+    import Listing from "$lib/listing/Listing.svelte";
+    // async function e() {
+    //     await Wasm.start("mangadex.wasm")
+    //     let fd = Wasm.storeStdValue([])
+    //     let pld = (Wasm.instances.get("mangadex.wasm").exports as any).get_manga_list(fd, 1)
+    //     let res = Wasm.readStdValue(pld) as MangaPageResult
+    //     Wasm.removeStdValue(pld)
+    //     Wasm.removeStdValue(fd)
+    //     console.log(res)
+    //     return res
+    // }
+    // let val = e();
+    console.log("initting")
+    async function f() {
+        let source = new AidokuSource();
+        console.log("1")
+        await source.init("/testsrc.wasm");
+        console.log("2")
+        return source;
     }
+    let returned = f();
 </script>
-{#if res} 
-<p>{res.manga[0].title}</p>
-{:else} 
-<p>waiting for love</p>
-{/if}
-{#await sources then sources}
-{#each sources as source}
-    <div>
-        <img src={`${AIDOKU_BASE}/icons/${source.icon}`} alt={source.id} style="display: inline"/>
-        <p style="display: inline">{source.name}</p>
-        <button style="display: inline" on:click|once={() => handleClick(source)} value="get"></button>
-    </div>
-{/each}
+<Header />
+
+{#await returned then returned} 
+<Listing info={{
+    name: "All",
+    id: "all",
+    type: ListingType.Manga,
+    source: returned,
+}}/>
 {/await}
+
+<!-- {#await val}
+<p>waiting</p>
+{:then res}
+<p>{res}</p>
+{/await} -->
+
+<style lang="scss" global>
+	@use "../global.scss" as *;
+	@use "../global-dark.scss" as *;
+	@use "../global-light.scss" as *;
+</style>
