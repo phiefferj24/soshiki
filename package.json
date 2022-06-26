@@ -9,7 +9,7 @@
     "scripts": {
         "site": "yarn workspace soshiki-site dev",
         "site:open": "yarn workspace soshiki-site dev --open",
-        "proxy": "yarn workspace cors-anywhere start"
+        "proxy": "yarn workspace soshiki-proxy start"
     },
     "packageManager": "yarn@3.2.1"
 }
