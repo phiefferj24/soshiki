@@ -3,14 +3,13 @@
     "name": "soshiki",
     "workspaces": [
         "site",
-        "packages/**/*"
+        "packages/**/*",
+        "proxy"
     ],
     "scripts": {
         "site": "yarn workspace soshiki-site dev",
-        "site:open": "yarn workspace soshiki-site dev --open"
+        "site:open": "yarn workspace soshiki-site dev --open",
+        "proxy": "yarn workspace cors-anywhere start"
     },
-    "packageManager": "yarn@3.2.1",
-    "devDependencies": {
-        "@zip.js/zip.js": "^2.4.20"
-    }
+    "packageManager": "yarn@3.2.1"
 }

@@ -5,6 +5,7 @@
     import type { MangaPageResult } from "aidoku-ts/models/manga";
     import ListingCard, { ListingType } from "$lib/listing/ListingCard.svelte";
     import Listing from "$lib/listing/Listing.svelte";
+    import { onMount } from "svelte";
     // async function e() {
     //     await Wasm.start("mangadex.wasm")
     //     let fd = Wasm.storeStdValue([])
@@ -19,23 +20,17 @@
     console.log("initting")
     async function f() {
         let source = new AidokuSource();
-        console.log("1")
-        await source.init("/multi.mangadex-v2.aix");
-        console.log("2")
-        return source;
+        await source.init("/en.tcbscans-v2.aix");
+        let list = source.getMangaList([], 1);
+        console.log(list);
     }
-    let returned = f();
+    onMount(f);
 </script>
 <Header />
-
+<!-- 
 {#await returned then returned} 
-<Listing info={{
-    name: "All",
-    id: "all",
-    type: ListingType.Manga,
-    source: returned,
-}}/>
-{/await}
+
+{/await} -->
 
 <!-- {#await val}
 <p>waiting</p>
