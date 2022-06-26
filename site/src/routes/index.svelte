@@ -20,7 +20,7 @@
     async function f() {
         let source = new AidokuSource();
         console.log("1")
-        await source.init("/testsrc.wasm");
+        await source.init("/multi.mangadex-v2.aix");
         console.log("2")
         return source;
     }
