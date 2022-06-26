@@ -2,7 +2,7 @@
     "name": "soshiki-proxy",
     "version": "0.0.1",
     "scripts": {
-        "start": "CORSANYWHERE_WHITELIST=soshiki.moe PORT=3500 node proxy.js"
+        "start": "PORT=3500 node proxy.js"
     },
     "dependencies": {
         "cors-anywhere": "^0.4.4"

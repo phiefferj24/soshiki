@@ -17,11 +17,10 @@
     //     return res
     // }
     // let val = e();
-    console.log("initting")
     async function f() {
         let source = new AidokuSource();
-        await source.init("/en.tcbscans-v2.aix");
-        let list = source.getMangaList([], 1);
+        await source.init("/multi.mangadex-v2.aix");
+        let list = await source.getMangaList([], 1);
         console.log(list);
     }
     onMount(f);
