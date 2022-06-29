@@ -4,3 +4,4 @@ node_modules/
 .yarn/cache
 *.min.js
 .DS_Store
+.env

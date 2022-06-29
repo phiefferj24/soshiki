@@ -7,9 +7,12 @@
         "proxy"
     ],
     "scripts": {
-        "site": "yarn workspace soshiki-site dev",
-        "site:open": "yarn workspace soshiki-site dev --open",
-        "proxy": "yarn workspace soshiki-proxy start"
+        "site:dev": "yarn workspace soshiki-site dev",
+        "site:dev:open": "yarn workspace soshiki-site dev --open",
+        "site": "yarn workspace soshiki-site preview",
+        "site:open": "yarn workspace soshiki-site preview --open",
+        "proxy": "yarn workspace soshiki-proxy start",
+        "proxy:dev": "yarn workspace soshiki-proxy start:dev"
     },
     "packageManager": "yarn@3.2.1"
 }

@@ -2,10 +2,10 @@
 	"name": "soshiki-site",
 	"version": "0.0.1",
 	"scripts": {
-		"dev": "svelte-kit dev --port 3501",
+		"dev": "svelte-kit dev --port $SITE_PORT_DEV",
 		"build": "svelte-kit build",
 		"package": "svelte-kit package",
-		"preview": "svelte-kit preview",
+		"preview": "svelte-kit preview --port $SITE_PORT",
 		"prepare": "svelte-kit sync",
 		"check": "svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
