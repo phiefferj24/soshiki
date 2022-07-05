@@ -4,13 +4,17 @@
     "workspaces": [
         "site",
         "packages/**/*",
-        "proxy"
+        "proxy",
+        "packages",
+        "database"
     ],
     "scripts": {
         "site:dev": "yarn workspace soshiki-site dev",
         "site:dev:open": "yarn workspace soshiki-site dev --open",
-        "site": "yarn workspace soshiki-site preview",
-        "site:open": "yarn workspace soshiki-site preview --open",
+        "site": "yarn workspace soshiki-site build && yarn workspace soshiki-site preview",
+        "site:open": "yarn workspace soshiki-site build && yarn workspace soshiki-site preview --open",
+        "site:war": "yarn workspace soshiki-site build && yarn workspace soshiki-site preview:war",
+        "site:war:open": "yarn workspace soshiki-site build && yarn workspace soshiki-site preview:war --open",
         "proxy": "yarn workspace soshiki-proxy start",
         "proxy:dev": "yarn workspace soshiki-proxy start:dev"
     },

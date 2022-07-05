@@ -1,8 +1,16 @@
+import type { Source } from '../source';
+
+import { AidokuSource } from './aidoku-ts/aidokuSource';
+
 export enum MangaSourceType {
     Aidoku = 'aidoku',
 }
 
-export interface MangaSource {
+let mangaSourceClasses = {
+    aidoku: AidokuSource,
+}
+
+export interface MangaSource extends Source {
     name: string;
     id: string;
     version: string;
@@ -16,6 +24,12 @@ export interface MangaSource {
     getMangaDetails(id: string): Promise<Manga>;
     getMangaChapters(id: string): Promise<MangaChapter[]>;
     getMangaChapterPages(id: string, chapterId: string): Promise<MangaPage[]>;
+}
+
+export async function install(type: MangaSourceType, url: string): Promise<MangaSource> {
+    let source = new mangaSourceClasses[type]();
+    await source.init(url);
+    return source;
 }
 
 export class Manga {

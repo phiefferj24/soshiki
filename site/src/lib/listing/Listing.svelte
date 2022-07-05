@@ -16,12 +16,23 @@
 
 <h1>{info.name}</h1>
 {#await listingInfo then listingInfo}
-{#each listingInfo.manga as manga}
-    <ListingCard info={{
-        type: info.type,
-        title: manga.title,
-        image: manga.cover,
-        hyperlink: `/${info.type}/${info.source.type}/${info.source.name}/${manga.id}`,
-    }}/>
-{/each}
+<div class="listing-container">
+    {#each listingInfo.manga as manga}
+        <ListingCard info={{
+            type: info.type,
+            title: manga.title,
+            image: manga.cover,
+            hyperlink: `/${info.type}/${info.source.type}/${info.source.name}/${manga.id}`,
+        }}/>
+    {/each}
+</div>
 {/await}
+
+<style lang=scss>
+    .listing-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        
+    }
+</style>

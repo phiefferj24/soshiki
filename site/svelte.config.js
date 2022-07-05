@@ -8,7 +8,19 @@ const config = {
 	preprocess: preprocess(),
 
 	kit: {
-		adapter: adapter()
+		adapter: adapter(),
+		vite: {
+			css: {
+                preprocessorOptions: {
+                    scss: {
+                        additionalData: `@use "src/styles/global.scss" as *;`
+                    }
+				}
+			},
+			server: {
+				host: true
+			}
+		}
 	}
 };
 

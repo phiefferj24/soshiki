@@ -1,0 +1,66 @@
+@font-face {
+    font-family: 'Inter';
+    font-weight: 100;
+    src: url("/fonts/Inter/static/Inter-Thin.ttf");
+}
+@font-face {
+    font-family: 'Inter';
+    font-weight: 200;
+    src: url("/fonts/Inter/static/Inter-ExtraLight.ttf");
+}
+@font-face {
+    font-family: 'Inter';
+    font-weight: 300;
+    src: url("/fonts/Inter/static/Inter-Light.ttf");
+}
+@font-face {
+    font-family: 'Inter';
+    font-weight: 400;
+    src: url("/fonts/Inter/static/Inter-Regular.ttf");
+}
+@font-face {
+    font-family: 'Inter';
+    font-weight: 500;
+    src: url("/fonts/Inter/static/Inter-Medium.ttf");
+}
+@font-face {
+    font-family: 'Inter';
+    font-weight: 600;
+    src: url("/fonts/Inter/static/Inter-SemiBold.ttf");
+}
+@font-face {
+    font-family: 'Inter';
+    font-weight: 700;
+    src: url("/fonts/Inter/static/Inter-Bold.ttf");
+}
+@font-face {
+    font-family: 'Inter';
+    font-weight: 800;
+    src: url("/fonts/Inter/static/Inter-ExtraBold.ttf");
+}
+@font-face {
+    font-family: 'Inter';
+    font-weight: 900;
+    src: url("/fonts/Inter/static/Inter-Black.ttf");
+}
+
+[class*="-glyph"] {
+    font-size: 1.5rem;
+    user-select: none;
+}
+
+//global variables
+$text-color-light: #333;
+$text-color-dark: #fff;
+$link-color-light: #8a1818;
+$link-color-dark: #00bcd4;
+$background-color-light: #fff;
+$background-color-dark: #333;
+$accent-text-color-light: #333;
+$accent-text-color-dark: #aaa;
+$accent-background-color-light: #ddd;
+$accent-background-color-dark: #202020;
+$hover-background-color-light: #cdcdcd;
+$hover-background-color-dark: #333;
+$dropdown-border-color-light: #aaa;
+$dropdown-border-color-dark: #000;

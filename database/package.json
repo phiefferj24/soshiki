@@ -1,0 +1,12 @@
+{
+    "name": "soshiki-database",
+    "version": "0.0.1",
+    "dependencies": {
+        "dotenv": "^16.0.1",
+        "pg": "^8.7.3"
+    },
+    "devDependencies": {
+        "@types/dotenv": "^8.2.0",
+        "@types/pg": "^8.6.5"
+    }
+}

@@ -1,40 +1,205 @@
-<div class="header">
-    <img src="images/soshiki-large.svg" alt="Soshiki" class="header-item header-item-left" style="height: 40px"/>
-    <p class="header-item header-item-left">Soshiki</p>
-</div>
+<script lang=ts>
+    import { page } from "$app/stores"
+    let dropdownContent: HTMLElement;
+    let dropdownToggle: HTMLElement;
+    let dropped = false;
+
+    function handleClick(evt: MouseEvent) {
+        let target = evt.target as HTMLElement;
+        if (dropped && !dropdownContent.contains(target) && !dropdownToggle.contains(target)) {
+            dropped = false;
+        }
+    }
+</script>
+
+<svelte:body on:click={handleClick} />
+
+<nav class="header">
+    <div class="header-logo">
+        <span class="header-logo-kanji">織</span>
+        <span class="header-logo-text">Soshiki</span>
+    </div>
+    <div class="header-nav">
+        <a href="/browse" class:header-nav-selected={$page.url.pathname === "/browse"}>
+            <i class="f7-icons header-nav-glyph">globe</i>
+            <span class="header-nav-span">Browse</span>
+        </a>
+        <a href="/search" class:header-nav-selected={$page.url.pathname === "/search"}>
+            <i class="f7-icons header-nav-glyph">search</i>
+            <span class="header-nav-span">Search</span>
+        </a>
+        <a href="/library" class:header-nav-selected={$page.url.pathname === "/library"}>
+            <i class="f7-icons header-nav-glyph">folder_fill</i>
+            <span class="header-nav-span">Library</span>
+        </a>
+    </div>
+    <div class="header-user dropdown">
+        <i class="f7-icons dropdown-toggle header-user-glyph" bind:this={dropdownToggle} on:click={() => dropped = !dropped}>{dropped ? "chevron_up" : "chevron_down"}</i>
+        <img class="header-user-image" src="/testuser.jpg" alt="JimIsWayTooEpic"> 
+        <div class="dropdown-content" class:dropdown-content-hidden={!dropped} bind:this={dropdownContent}>
+            <a href="/account/profile" class="dropdown-item" on:click={() => dropped = false}>
+                <i class="f7-icons dropdown-item-glyph">person_circle_fill</i>
+                <span class="dropdown-item-span">Profile</span>
+            </a>
+            <a href="/account/settings" class="dropdown-item" on:click={() => dropped = false}>
+                <i class="f7-icons dropdown-item-glyph">gear_alt_fill</i>
+                <span class="dropdown-item-span">Settings</span>
+        </div>
+    </div>
+</nav>
 
 <style lang="scss">
+    @use "../styles/global.scss" as *;
 .header {
-    background-color: #f5f5f5;
-    color: #333;
-    display: flex;
-    text-align: center;
-}
-.header-item {
-    display: flexbox;
-    padding: 0.5rem;
-    margin: 0;
-    font-size: 1.5rem;
-    stroke: #333;
-    fill: #333;
-    vertical-align: middle;
-}
-.header-item-left {
-    display: inline;
-    float: left;
-}
-.header-item-right {
-    display: inline;
-    float: right;
-}
-@media (prefers-color-scheme: dark) {
-    .header {
-        background-color: #333;
-        color: #fff;
+    font-size: 1rem;
+    font-weight: bold;
+    color: $accent-text-color-light;
+    background-color: $accent-background-color-light;
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1fr;
+    grid-template-areas: "logo nav user";
+    padding: 0.5rem 2rem;
+    &-logo {
+        display: flex;
+        grid-area: logo;
+        align-items: center;
+        justify-content: left;
+        gap: 1rem;
+        &-kanji {
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        &-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
     }
-    .header-item {
-        stroke: #fff;
-        fill: #fff;
+    &-nav {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        grid-area: nav;
+        > a {
+            padding: 0.5rem;
+            width: min(100%, 12rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border-radius: 0.5rem;
+            &:hover {
+                background-color: $hover-background-color-light;
+                @media (prefers-color-scheme: dark) {
+                    background-color: $hover-background-color-dark;
+                }
+            }
+        }
+        &-selected {
+            background-color: mix($accent-background-color-light, $hover-background-color-light, 40%);
+            @media (prefers-color-scheme: dark) {
+                background-color: mix($accent-background-color-dark, $hover-background-color-dark);
+            }
+        }
+    }
+    &-user {
+        display: flex;
+        grid-area: user;
+        align-items: center;
+        justify-content: right;
+        gap: 1rem;
+        &-image {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+        }
+    }
+    .dropdown {
+        position: relative;
+        &-toggle {
+            cursor: pointer;
+        }
+        &-content {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            top: calc(100% + 1rem);
+            right: -1.5rem;
+            z-index: 1;
+            background-color: $accent-background-color-light;
+            border-radius: 0.5rem;
+            border: 2px solid $dropdown-border-color-light;
+            @media (prefers-color-scheme: dark) {
+                background-color: $accent-background-color-dark;
+                border: 2px solid $dropdown-border-color-dark;
+            }
+            &-hidden {
+                display: none;
+            }
+        }
+        &-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            gap: 1rem;
+            &:hover {
+                background-color: $hover-background-color-light;
+                border-radius: 0.5rem;
+                @media (prefers-color-scheme: dark) {
+                    background-color: $hover-background-color-dark;
+                }
+            }
+        }
+    }
+
+    @media (prefers-color-scheme: dark) {
+        background-color: $accent-background-color-dark;
+        color: $accent-text-color-dark;
+    }
+
+
+
+    @media (max-width: 1000px) {
+        grid-template-columns: 1fr 2fr 1fr;
+    }
+
+    @media (max-width: 800px) {
+        .header-logo-text {
+            display: none;
+        }
+    }
+
+    @media (max-width: 650px) {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas: "logo user" "nav nav";
+        gap: 1rem;
+        .dropdown-content {
+            top: calc(100% + 4.5rem);
+        }
+    }
+
+    @media (max-width: 480px) {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        &-logo-kanji {
+            font-size: 1.5rem;
+        }
+        &-nav {
+            gap: 0.5rem;
+        }
+        &-user {
+            &-image {
+                width: 1.5rem;
+                height: 1.5rem;
+            }
+            gap: 0.5rem;
+        }
+        .dropdown-content {
+            top: calc(100% + 4rem);
+            right: 0rem;
+        }
+        *[class*="-glyph"] {
+            font-size: 1.125rem;
+        }
     }
 }
 </style>

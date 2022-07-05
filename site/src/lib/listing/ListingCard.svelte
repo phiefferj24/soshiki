@@ -7,25 +7,29 @@
 </script>
 <script lang=ts>
 import Header from "$lib/Header.svelte";
+import Skeleton from "$lib/Skeleton.svelte";
 
-    export let info: {
-        type: ListingType,
-        title: string,
-        image: string,
-        releasedCount?: number,
-        totalCount?: number,
-        hyperlink?: string
-    };
+    // export let info: {
+    //     type: ListingType,
+    //     title: string,
+    //     image: string,
+    //     releasedCount?: number,
+    //     totalCount?: number,
+    //     hyperlink?: string
+    // };
     
 </script>
 
-<div class="card" style="background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.722)), url({info.image});">
+<!-- <div class="card" style="background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.722)), url(https://proxy.soshiki.moe/{info.image});">
     <a class="card-content" href={info.hyperlink}>
         <p class="title">{info.title.length > 40 ? info.title.substring(0, 37) + "…" : info.title}</p>
         {#if info.releasedCount && info.totalCount}
             <p class="subtitle">{info.type === ListingType.Anime ? "Episode" : "Chapter"} {info.releasedCount} / {info.totalCount}</p>
         {/if}
     </a>
+</div> -->
+<div class="card">
+    <Skeleton />
 </div>
 
 <style lang=scss>
@@ -50,11 +54,12 @@ import Header from "$lib/Header.svelte";
         display: flex;
         flex-direction: column;
         text-decoration: none;
+        justify-content: flex-end;
+        padding: 0.25rem;
     }
     .title {
         font-size: 1rem;
         font-weight: bold;
-        margin: auto 0 0;
         padding: 0.5rem 0.5rem 0.25rem;
         text-align: left;
     }
