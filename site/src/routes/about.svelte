@@ -31,6 +31,13 @@
             For content removal, contact the source that hosts the content.
         </span>
     </div>
+    <div class="about-section">
+        <span class="about-section-heading">Credits</span>
+        <span class="about-section-paragraph">
+            Huge thanks to <strong>s0n1c</strong> for not only inspiring Soshiki, but also for helping me with everything throughout its development.<br/>
+            Thanks to <strong>Skitty</strong> for also inspiring the project and creating Aidoku, one of the manga extension sets.
+        </span>
+    </div>
 </div>
 
 <style lang=scss>
@@ -84,15 +91,6 @@
                 padding-top: 1rem;
                 font-size: 1rem;
                 font-weight: 600;
-            }
-        }
-        &-email {
-            color: $link-color-light;
-            @media (prefers-color-scheme: dark) {
-                color: $link-color-dark;
-            }
-            &:hover {
-                text-decoration: underline;
             }
         }
     }

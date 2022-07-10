@@ -1,6 +1,6 @@
 import { writable } from "svelte/store"
 import { browser } from "$app/env"
-import { Medium } from "./types";
+import type { Medium } from "soshiki-types";
 import { Source, type SourceType, install } from "soshiki-packages/source";
 let installedMangaSources = browser ? localStorage.getItem('soshiki:installedMangaSources') : null;
 let installedNovelSources = browser ? localStorage.getItem('soshiki:installedNovelSources') : null;
@@ -10,9 +10,9 @@ export let sources = {
     novel: installedNovelSources ? installedNovelSources.split('\0').map((v) => {return {url: v.substring(0, v.indexOf(":")), type: v.substring(v.indexOf(":") + 1), source: null}}) : [],
     anime: installedAnimeSources ? installedAnimeSources.split('\0').map((v) => {return {url: v.substring(0, v.indexOf(":")), type: v.substring(v.indexOf(":") + 1), source: null}}) : [],
 };
-for(let medium of [Medium.manga, Medium.novel, Medium.anime]) {
+for(let medium of ['manga', 'novel', 'anime']) {
     for(let source of sources[medium]) {
-        await installSource(medium, source.type as SourceType, source.url);
+        await installSource(medium as Medium, source.type as SourceType, source.url);
     }
 }
 

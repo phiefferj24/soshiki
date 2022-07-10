@@ -1,15 +1,22 @@
 <script lang="ts">
-    import { Medium } from '$lib/types'
+    import type { Medium } from 'soshiki-types'
     import { currentMedium } from '$lib/stores'
+    import { goto } from '$app/navigation'
+    import { page } from '$app/stores'
+    import { browser } from '$app/env'
     let dropdownContent: HTMLElement;
     let dropdownToggle: HTMLElement;
     let dropped = false;
 
     const types = [
-        {name: "Manga", type: Medium.manga, icon: "book_fill"},
-        {name: "Anime", type: Medium.anime, icon: "film_fill"},
-        {name: "Light Novels", type: Medium.novel, icon: "doc_text_fill"},
+        {name: "Manga", type: 'manga' as Medium, icon: "book_fill"},
+        {name: "Anime", type: 'anime' as Medium, icon: "film_fill"},
+        {name: "Light Novels", type: 'novel' as Medium, icon: "doc_text_fill"},
     ]
+
+    async function mediumChanged() {
+        await goto(`/${$currentMedium}/${$page.url.pathname.slice($page.url.pathname.slice(1).indexOf('/') + 2)}`)
+    }
 
     let typeIndex = $currentMedium ? types.findIndex(type => type.type === $currentMedium) : 0;
 
@@ -27,10 +34,10 @@
     <div class="footer-row dropdown">
         <i class="f7-icons dropdown-item-glyph">{types[typeIndex].icon}</i>
         <span class="dropdown-item-span">{types[typeIndex].name}</span>
-        <i class="f7-icons dropdown-toggle header-user-glyph" bind:this={dropdownToggle} on:click={() => dropped = !dropped}>{dropped ? "chevron_down" : "chevron_up"}</i>
+        <i class="f7-icons dropdown-toggle footer-medium-glyph" bind:this={dropdownToggle} on:click={() => dropped = !dropped}>{dropped ? "chevron_down" : "chevron_up"}</i>
         <div class="dropdown-content" class:dropdown-content-hidden={!dropped} bind:this={dropdownContent}>
             {#each types as type, index} 
-                <div class="dropdown-item" on:click={() => {dropped = false; typeIndex = index; $currentMedium = type.type}}>
+                <div class="dropdown-item" on:click={() => {dropped = false; typeIndex = index; $currentMedium = type.type; mediumChanged()}}>
                     <i class="f7-icons dropdown-item-glyph">{type.icon}</i>
                     <span class="dropdown-item-span">{type.name}</span>
                 </div>
@@ -91,10 +98,6 @@
             border: 2px solid $dropdown-border-color-light;
             max-height: 30vh;
             overflow-y: scroll;
-            scrollbar-width: none;
-            &::-webkit-scrollbar {
-                display: none;
-            }
             @media (prefers-color-scheme: dark) {
                 background-color: $accent-background-color-dark;
                 border: 2px solid $dropdown-border-color-dark;

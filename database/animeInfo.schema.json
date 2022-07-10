@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string"
+      },
+      "alt_titles": {
+        "type": "array",
+        "items": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      },
+      "cover": {
+        "type": "string"
+      },
+      "nsfw": {
+        "type": "boolean"
+      }
+    }
+  }

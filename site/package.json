@@ -2,11 +2,10 @@
 	"name": "soshiki-site",
 	"version": "0.0.1",
 	"scripts": {
-		"dev": "svelte-kit dev --port $SITE_PORT_DEV",
+		"dev": "svelte-kit dev --port 3501",
 		"build": "svelte-kit build",
 		"package": "svelte-kit package",
-		"preview": "svelte-kit preview --port $SITE_PORT",
-		"preview:war": "svelte-kit preview --port $SITE_PORT_DEV",
+		"preview": "svelte-kit preview",
 		"prepare": "svelte-kit sync",
 		"check": "svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
@@ -16,6 +15,7 @@
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "next",
 		"@sveltejs/kit": "^1.0.0-next.350",
+		"@types/js-cookie": "^3.0.2",
 		"@types/web": "^0.0.68",
 		"@typescript-eslint/eslint-plugin": "^5.27.0",
 		"@typescript-eslint/parser": "^5.27.0",
@@ -33,6 +33,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"framework7-icons": "^5.0.5"
+		"framework7-icons": "^5.0.5",
+		"js-cookie": "^3.0.1"
 	}
 }

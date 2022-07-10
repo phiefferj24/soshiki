@@ -1,0 +1,19 @@
+{
+    "name": "soshiki-api",
+    "version": "0.0.1",
+    "main": "./src/index.ts",
+    "dependencies": {
+        "dotenv": "^16.0.1",
+        "express": "^4.18.1",
+        "jikan4.js": "^1.1.0"
+    },
+    "devDependencies": {
+        "@types/dotenv": "^8.2.0",
+        "@types/express": "^4.17.13"
+    },
+    "scripts": {
+        "build": "tsc -p .",
+        "start": "ts-node ./src/index.ts",
+        "dev": "ts-node-dev ./src/index.ts"
+    }
+}

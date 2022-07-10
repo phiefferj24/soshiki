@@ -2,8 +2,7 @@
     "name": "soshiki-proxy",
     "version": "0.0.1",
     "scripts": {
-        "start": "PORT=$PROXY_PORT node proxy.js",
-        "start:dev": "PORT=$PROXY_PORT_DEV node proxy.js"
+        "start": "ts-node src/index.ts"
     },
     "dependencies": {
         "cors-anywhere": "^0.4.4"

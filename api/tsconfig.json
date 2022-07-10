@@ -1,0 +1,9 @@
+{
+	"compilerOptions": {
+		"forceConsistentCasingInFileNames": true,
+		"lib": ["ES2020"],
+		"module": "CommonJS",
+		"target": "ES2020",
+		"esModuleInterop": true,
+	}
+}

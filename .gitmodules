@@ -1,6 +1,3 @@
 [submodule "packages/manga/aidoku-ts"]
 	path = packages/manga/aidoku-ts
 	url = https://github.com/phiefferj24/aidoku-ts
-[submodule "proxy"]
-	path = proxy
-	url = https://github.com/Rob--W/cors-anywhere

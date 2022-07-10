@@ -1,15 +1,23 @@
 <script lang=ts>
     import { page } from "$app/stores"
+    import { user } from "$lib/stores"
+import { loop_guard } from "svelte/internal";
+    import Skeleton from "./Skeleton.svelte";
     let dropdownContent: HTMLElement;
     let dropdownToggle: HTMLElement;
     let dropped = false;
-
     function handleClick(evt: MouseEvent) {
         let target = evt.target as HTMLElement;
         if (dropped && !dropdownContent.contains(target) && !dropdownToggle.contains(target)) {
             dropped = false;
         }
     }
+    let userImage: Promise<any>;
+    user.subscribe((val) => {
+        if (val) {
+            userImage = fetch(`https://api.soshiki.moe/user/${val.id}/avatar`).then(res => res.text());
+        }
+    });
 </script>
 
 <svelte:body on:click={handleClick} />
@@ -35,15 +43,31 @@
     </div>
     <div class="header-user dropdown">
         <i class="f7-icons dropdown-toggle header-user-glyph" bind:this={dropdownToggle} on:click={() => dropped = !dropped}>{dropped ? "chevron_up" : "chevron_down"}</i>
-        <img class="header-user-image" src="/testuser.jpg" alt="JimIsWayTooEpic"> 
+        {#if $user}
+            {#await userImage}
+                <i class="f7-icons header-user-image header-user-glyph">person_crop_circle_fill</i>
+            {:then userImage}
+                <img class="header-user-image" src={userImage} alt=""> 
+            {/await}
+        {:else}
+            <i class="f7-icons header-user-image header-user-glyph">person_crop_circle_fill</i>
+        {/if}
         <div class="dropdown-content" class:dropdown-content-hidden={!dropped} bind:this={dropdownContent}>
-            <a href="/account/profile" class="dropdown-item" on:click={() => dropped = false}>
-                <i class="f7-icons dropdown-item-glyph">person_circle_fill</i>
-                <span class="dropdown-item-span">Profile</span>
-            </a>
-            <a href="/account/settings" class="dropdown-item" on:click={() => dropped = false}>
-                <i class="f7-icons dropdown-item-glyph">gear_alt_fill</i>
-                <span class="dropdown-item-span">Settings</span>
+            {#if $user}
+                <a href="/user" class="dropdown-item" on:click={() => dropped = false}>
+                    <i class="f7-icons dropdown-item-glyph">person_circle_fill</i>
+                    <span class="dropdown-item-span">Profile</span>
+                </a>
+                <a href="/account" class="dropdown-item" on:click={() => dropped = false}>
+                    <i class="f7-icons dropdown-item-glyph">gear_alt_fill</i>
+                    <span class="dropdown-item-span">Account</span>
+                </a>
+            {:else}
+                <a href="https://api.soshiki.moe/user/redirect/discord" class="dropdown-item" on:click={() => dropped = false}>
+                    <i class="f7-icons dropdown-item-glyph">person_crop_circle_fill</i>
+                    <span class="dropdown-item-span">Login</span>
+                </a>
+            {/if}
         </div>
     </div>
 </nav>
@@ -111,6 +135,7 @@
             width: 2rem;
             height: 2rem;
             border-radius: 50%;
+            font-size: 2rem;
         }
     }
     .dropdown {
@@ -123,7 +148,10 @@
             flex-direction: column;
             position: absolute;
             top: calc(100% + 1rem);
+            left: unset;
             right: -1.5rem;
+            height: fit-content;
+            width: fit-content;
             z-index: 1;
             background-color: $accent-background-color-light;
             border-radius: 0.5rem;
@@ -150,24 +178,18 @@
             }
         }
     }
-
     @media (prefers-color-scheme: dark) {
         background-color: $accent-background-color-dark;
         color: $accent-text-color-dark;
     }
-
-
-
     @media (max-width: 1000px) {
         grid-template-columns: 1fr 2fr 1fr;
     }
-
     @media (max-width: 800px) {
         .header-logo-text {
             display: none;
         }
     }
-
     @media (max-width: 650px) {
         grid-template-columns: 1fr 1fr;
         grid-template-areas: "logo user" "nav nav";
@@ -176,7 +198,6 @@
             top: calc(100% + 4.5rem);
         }
     }
-
     @media (max-width: 480px) {
         font-size: 0.75rem;
         padding: 0.25rem 0.5rem;

@@ -1,72 +1,53 @@
-<script lang=ts context=module>
-    export enum ListingType {
-        Manga = "manga",
-        Anime = "anime",
-        Novel = "novel"
-    }
-</script>
-<script lang=ts>
-import Header from "$lib/Header.svelte";
-import Skeleton from "$lib/Skeleton.svelte";
-
-    // export let info: {
-    //     type: ListingType,
-    //     title: string,
-    //     image: string,
-    //     releasedCount?: number,
-    //     totalCount?: number,
-    //     hyperlink?: string
-    // };
-    
+<script lang="ts">
+    import { page } from "$app/stores";
+    export let cover: string = '';
+    export let title: string = '';
+    export let subtitle: string = '';
+    export let id: string = '';
+    export let sub: string = 'info';
+    $: rtitle = title.length > 40 ? title.substring(0, 37).trim() + '...' : title;
+    $: rsubtitle = subtitle.length > 40 ? subtitle.substring(0, 37).trim() + '...' : subtitle;
 </script>
 
-<!-- <div class="card" style="background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.722)), url(https://proxy.soshiki.moe/{info.image});">
-    <a class="card-content" href={info.hyperlink}>
-        <p class="title">{info.title.length > 40 ? info.title.substring(0, 37) + "…" : info.title}</p>
-        {#if info.releasedCount && info.totalCount}
-            <p class="subtitle">{info.type === ListingType.Anime ? "Episode" : "Chapter"} {info.releasedCount} / {info.totalCount}</p>
-        {/if}
-    </a>
-</div> -->
-<div class="card">
-    <Skeleton />
-</div>
+<a href={`/${$page.params.medium}/${id}/${sub}`} class="listing-card" style:--cover="url({cover})">
+    <span class="listing-card-title">{rtitle}</span>
+    <span class="listing-card-subtitle">{rsubtitle}</span>
+</a>
 
-<style lang=scss>
-    .card {
+<style lang="scss">
+    @use "../../styles/global.scss" as *;
+    .listing-card {
         display: flex;
         flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 10rem;
-        height: 15rem;
-        background-color: #fff;
-        border-radius: 0.75rem;
-        box-shadow: 0 0 2rem rgba(0, 0, 0, 0.2);
-        margin: 1rem;
-        background-size: cover;
-        background-position: center;
-    }
-    .card-content {
+        align-items: left;
+        justify-content: flex-end;
+        font-weight: bold;
         width: 100%;
         height: 100%;
-        color: white;
-        display: flex;
-        flex-direction: column;
-        text-decoration: none;
-        justify-content: flex-end;
-        padding: 0.25rem;
-    }
-    .title {
-        font-size: 1rem;
-        font-weight: bold;
-        padding: 0.5rem 0.5rem 0.25rem;
-        text-align: left;
-    }
-    .subtitle {
-        font-size: 0.75rem;
-        margin: 0;
-        padding: 0 0.5rem 0.5rem;
-        text-align: left;
+        padding: 0.5rem;
+        background-image: linear-gradient(transparent 40%, #ddd), var(--cover);
+        @media (prefers-color-scheme: dark) {
+            background-image: linear-gradient(transparent 40%, #222), var(--cover);
+        }
+        background-position: center;
+        background-size: cover;
+        background-repeat: no-repeat;
+        border-radius: 0.5rem;
+        box-shadow: 0 0 0.5rem 0 rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        &:hover {
+            box-shadow: 0 0 0.5rem 0 rgba(0, 0, 0, 0.5);
+        }
+        &-title {
+            font-size: 0.9rem;
+        }
+        &-subtitle {
+            font-size: 0.6rem;
+            color: $accent-text-color-light;
+            @media (prefers-color-scheme: dark) {
+                color: $accent-text-color-dark;
+            }
+        }
     }
 </style>

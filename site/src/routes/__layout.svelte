@@ -1,12 +1,49 @@
-<script>
+<script lang="ts">
     import 'framework7-icons/css/framework7-icons.css';
     import Header from "$lib/Header.svelte"
     import Footer from "$lib/Footer.svelte"
+    import { page } from '$app/stores';
+    import { onMount } from 'svelte';
+    import { user } from '$lib/stores';
+    import Cookie from 'js-cookie';
+    import { goto } from '$app/navigation';
+    let mounted = false;
+    async function init() {
+        let session = Cookie.get("session");
+        let id = Cookie.get("id");
+        if (session && id) {
+            setUser(id);
+        } else if (id) {
+            let res = await fetch(`https://api.soshiki.moe/user/login/discord/refresh?id=${id}`);
+            let data = await res.json();
+            Cookie.set("session", data.session, { expires: new Date(Date.now() + data.expires) });
+            setUser(data.id);
+        } else if ($page.url.pathname !== "/account/redirect") {
+            await goto("https://api.soshiki.moe/user/redirect/discord", { replaceState: true });
+        }
+        mounted = true;
+    }
+    async function setUser(id: string) {
+        let res = await fetch(`https://api.soshiki.moe/user/${id}`);
+            let data = await res.json();
+            if (data) {
+                user.set(data);
+            }
+    }
+    onMount(init);
 </script>
 
-<Header />
-<slot />
-<Footer />
+<svelte:head>
+    <title>{$page.url.pathname.split('/').length > 2 ? $page.url.pathname.split('/')[2].replace(/.?/, m => m.toUpperCase()) + ' - ' : ''}Soshiki</title>
+</svelte:head>
+{#if mounted}
+    <Header />
+    <div class="container">
+        <slot />
+    </div>
+    <div style="height: 3rem; width: 100%;"></div>
+    <Footer/>
+{/if}
 
 <style lang="scss" global>
     @use "../styles/global.scss" as *;
@@ -19,8 +56,20 @@
         color: $text-color-light;
     }
     a {
-        color: inherit;
         text-decoration: none;
+        color: inherit;
+        font-size: inherit;
+        font-weight: inherit;
+    }
+    a[class*="email"], a[class*="hyperlink"] {
+        text-decoration: none;
+        color: $link-color-light;
+        @media (prefers-color-scheme: dark) {
+            color: $link-color-dark;
+        }
+        &:hover {
+            text-decoration: underline;
+        }
     }
     * {
         box-sizing: border-box;
@@ -31,5 +80,10 @@
             background: $background-color-dark;
             color: $text-color-dark;
         }
+    }
+    .container {
+        padding: 2rem;
+        width: min(50rem, 100%);
+        margin: 0 auto;
     }
 </style>

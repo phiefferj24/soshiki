@@ -6,7 +6,12 @@
         "packages/**/*",
         "proxy",
         "packages",
-        "database"
+        "database",
+        "updater",
+        "api",
+        "types",
+        "manifest",
+        "discord"
     ],
     "scripts": {
         "site:dev": "yarn workspace soshiki-site dev",
@@ -16,7 +21,11 @@
         "site:war": "yarn workspace soshiki-site build && yarn workspace soshiki-site preview:war",
         "site:war:open": "yarn workspace soshiki-site build && yarn workspace soshiki-site preview:war --open",
         "proxy": "yarn workspace soshiki-proxy start",
-        "proxy:dev": "yarn workspace soshiki-proxy start:dev"
+        "proxy:dev": "yarn workspace soshiki-proxy start:dev",
+        "api": "yarn workspace soshiki-api start",
+        "api:dev": "yarn workspace soshiki-api dev",
+        "updater": "yarn workspace soshiki-updater start",
+        "updater:dev": "yarn workspace soshiki-updater dev"
     },
     "packageManager": "yarn@3.2.1"
 }
