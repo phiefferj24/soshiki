@@ -1,7 +1,6 @@
 <script lang="ts">
     import 'framework7-icons/css/framework7-icons.css';
     import Header from "$lib/Header.svelte"
-    import Footer from "$lib/Footer.svelte"
     import { page } from '$app/stores';
     import { onMount } from 'svelte';
     import { user } from '$lib/stores';
@@ -19,7 +18,7 @@
             Cookie.set("session", data.session, { expires: new Date(Date.now() + data.expires) });
             setUser(data.id);
         } else if ($page.url.pathname !== "/account/redirect") {
-            await goto("https://api.soshiki.moe/user/redirect/discord", { replaceState: true });
+            await goto("https://api.soshiki.moe/user/login/discord/redirect", { replaceState: true });
         }
         mounted = true;
     }
@@ -38,11 +37,7 @@
 </svelte:head>
 {#if mounted}
     <Header />
-    <div class="container">
-        <slot />
-    </div>
-    <div style="height: 3rem; width: 100%;"></div>
-    <Footer/>
+    <slot />
 {/if}
 
 <style lang="scss" global>
@@ -80,10 +75,5 @@
             background: $background-color-dark;
             color: $text-color-dark;
         }
-    }
-    .container {
-        padding: 2rem;
-        width: min(50rem, 100%);
-        margin: 0 auto;
     }
 </style>

@@ -134,6 +134,38 @@ export default class Database {
         }
     }
 
+    async setUserConnection(id: string, connection: string, value: any): Promise<boolean> {
+        try {
+            let data = await this.client.query(`
+                SELECT connections FROM users WHERE id = $1
+            `, [id]);
+            data = data.rows[0].connections;
+            data[connection] = value;
+            await this.client.query(`
+                UPDATE users SET connections = $1 WHERE id = $2
+            `, [data, id]);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    async setUserData(id: string, key: string, value: any): Promise<boolean> {
+        try {
+            let data = await this.client.query(`
+                SELECT data FROM users WHERE id = $1
+            `, [id]);
+            data = data.rows[0].data;
+            data[key] = value;
+            await this.client.query(`
+                UPDATE users SET data = $1 WHERE id = $2
+            `, [data, id]);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
     async add(type: Medium, info: Json, trackerIds: Json, sourceIds: Json): Promise<boolean> {
         switch(type) {
             case 'manga': return await this.addManga(info, trackerIds, sourceIds);
@@ -540,7 +572,7 @@ export default class Database {
         }
     }
 
-    async setInfoProperty(type: Medium, id: string, property: string, value: string): Promise<boolean> {
+    async setInfoProperty(type: Medium, id: string, property: string, value: any): Promise<boolean> {
         switch(type) {
             case 'manga': return await this.setMangaInfoProperty(id, property, value);
             case 'anime': return await this.setAnimeInfoProperty(id, property, value);
@@ -548,34 +580,49 @@ export default class Database {
             default: return false;
         }
     }
-    async setMangaInfoProperty(id: string, property: string, value: string): Promise<boolean> {
+    async setMangaInfoProperty(id: string, property: string, value: any): Promise<boolean> {
         try {
+            let data = await this.client.query(`
+                SELECT info FROM manga WHERE id = $1
+            `, [id]);
+            if (!data.rows.length) return false;
+            let info = data.rows[0].info;
+            info[property] = value;
             await this.client.query(`
-                UPDATE manga SET info->>$1 = $2 WHERE id = $3
-            `, [property, value, id]
-            );
+                UPDATE manga SET info = $1 WHERE id = $2
+            `, [info, id]);
             return true;
         } catch (e) {
             return false;
         }
     }
-    async setAnimeInfoProperty(id: string, property: string, value: string): Promise<boolean> {
+    async setAnimeInfoProperty(id: string, property: string, value: any): Promise<boolean> {
         try {
+            let data = await this.client.query(`
+                SELECT info FROM anime WHERE id = $1
+            `, [id]);
+            if (!data.rows.length) return false;
+            let info = data.rows[0].info;
+            info[property] = value;
             await this.client.query(`
-                UPDATE anime SET info->>$1 = $2 WHERE id = $3
-            `, [property, value, id]
-            );
+                UPDATE anime SET info = $1 WHERE id = $2
+            `, [info, id]);
             return true;
         } catch (e) {
             return false;
         }
     }
-    async setNovelInfoProperty(id: string, property: string, value: string): Promise<boolean> {
+    async setNovelInfoProperty(id: string, property: string, value: any): Promise<boolean> {
         try {
+            let data = await this.client.query(`
+                SELECT info FROM novels WHERE id = $1
+            `, [id]);
+            if (!data.rows.length) return false;
+            let info = data.rows[0].info;
+            info[property] = value;
             await this.client.query(`
-                UPDATE novels SET info->>$1 = $2 WHERE id = $3
-            `, [property, value, id]
-            );
+                UPDATE novels SET info = $1 WHERE id = $2
+            `, [info, id]);
             return true;
         } catch (e) {
             return false;
@@ -592,10 +639,15 @@ export default class Database {
     }
     async setMangaTrackerId(id: string, property: string, value: string): Promise<boolean> {
         try {
+            let data = await this.client.query(`
+                SELECT tracker_ids FROM manga WHERE id = $1
+            `, [id]);
+            if (!data.rows.length) return false;
+            let tracker_ids = data.rows[0].tracker_ids;
+            tracker_ids[property] = value;
             await this.client.query(`
-                UPDATE manga SET tracker_ids->>$1 = $2 WHERE id = $3
-            `, [property, value, id]
-            );
+                UPDATE manga SET tracker_ids = $1 WHERE id = $2
+            `, [tracker_ids, id]);
             return true;
         } catch (e) {
             return false;
@@ -603,10 +655,15 @@ export default class Database {
     }
     async setAnimeTrackerId(id: string, property: string, value: string): Promise<boolean> {
         try {
+            let data = await this.client.query(`
+                SELECT tracker_ids FROM anime WHERE id = $1
+            `, [id]);
+            if (!data.rows.length) return false;
+            let tracker_ids = data.rows[0].tracker_ids;
+            tracker_ids[property] = value;
             await this.client.query(`
-                UPDATE anime SET tracker_ids->>$1 = $2 WHERE id = $3
-            `, [property, value, id]
-            );
+                UPDATE anime SET tracker_ids = $1 WHERE id = $2
+            `, [tracker_ids, id]);
             return true;
         } catch (e) {
             return false;
@@ -614,10 +671,15 @@ export default class Database {
     }
     async setNovelTrackerId(id: string, property: string, value: string): Promise<boolean> {
         try {
+            let data = await this.client.query(`
+                SELECT tracker_ids FROM novels WHERE id = $1
+            `, [id]);
+            if (!data.rows.length) return false;
+            let tracker_ids = data.rows[0].tracker_ids;
+            tracker_ids[property] = value;
             await this.client.query(`
-                UPDATE novels SET tracker_ids->>$1 = $2 WHERE id = $3
-            `, [property, value, id]
-            );
+                UPDATE novels SET tracker_ids = $1 WHERE id = $2
+            `, [tracker_ids, id]);
             return true;
         } catch (e) {
             return false;
@@ -634,10 +696,15 @@ export default class Database {
     }
     async setMangaSourceId(id: string, property: string, value: string): Promise<boolean> {
         try {
+            let data = await this.client.query(`
+                SELECT source_ids FROM manga WHERE id = $1
+            `, [id]);
+            if (!data.rows.length) return false;
+            let source_ids = data.rows[0].source_ids;
+            source_ids[property] = value;
             await this.client.query(`
-                UPDATE manga SET source_ids->>$1 = $2 WHERE id = $3
-            `, [property, value, id]
-            );
+                UPDATE manga SET source_ids = $1 WHERE id = $2
+            `, [source_ids, id]);
             return true;
         } catch (e) {
             return false;
@@ -645,10 +712,15 @@ export default class Database {
     }
     async setAnimeSourceId(id: string, property: string, value: string): Promise<boolean> {
         try {
+            let data = await this.client.query(`
+                SELECT source_ids FROM anime WHERE id = $1
+            `, [id]);
+            if (!data.rows.length) return false;
+            let source_ids = data.rows[0].source_ids;
+            source_ids[property] = value;   
             await this.client.query(`
-                UPDATE anime SET source_ids->>$1 = $2 WHERE id = $3
-            `, [property, value, id]
-            );
+                UPDATE anime SET source_ids = $1 WHERE id = $2
+            `, [source_ids, id]);
             return true;
         } catch (e) {
             return false;
@@ -656,10 +728,15 @@ export default class Database {
     }
     async setNovelSourceId(id: string, property: string, value: string): Promise<boolean> {
         try {
+            let data = await this.client.query(`
+                SELECT source_ids FROM novels WHERE id = $1
+            `, [id]);
+            if (!data.rows.length) return false;
+            let source_ids = data.rows[0].source_ids;
+            source_ids[property] = value;
             await this.client.query(`
-                UPDATE novels SET source_ids->>$1 = $2 WHERE id = $3
-            `, [property, value, id]
-            );
+                UPDATE novels SET source_ids = $1 WHERE id = $2
+            `, [source_ids, id]);
             return true;
         } catch (e) {
             return false;

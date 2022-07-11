@@ -9,11 +9,13 @@ export const isDarkMode = readable(null, (set) => {
     return () => {media.removeEventListener('change', listener)}
 })
 
-let medium: Medium = (browser ? localStorage.getItem('soshiki:currentMedium') as Medium : 'manga') || 'manga'
+let medium: Medium = (browser ? (JSON.parse(localStorage.getItem('soshiki') || "{}").currentMedium || 'manga') as Medium : 'manga') || 'manga'
 export const currentMedium = writable(medium)
 currentMedium.subscribe((medium) => {
     if (browser) {
-        localStorage.setItem('soshiki:currentMedium', medium)
+        let storage = JSON.parse(localStorage.getItem('soshiki') || "{}") || {};
+        storage.currentMedium = medium;
+        localStorage.setItem('soshiki', JSON.stringify(storage));
     }
 })
 

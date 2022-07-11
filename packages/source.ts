@@ -1,5 +1,6 @@
 import type { MangaSourceType } from './manga/mangaSource';
 import * as MangaSource from './manga/mangaSource';
+import type { Medium } from "soshiki-types";
 export type SourceType = MangaSourceType;
 export class Source {
     name: string;
@@ -9,9 +10,9 @@ export class Source {
     nsfw: number;
     image: string;
 }
-export async function install(medium: 'manga' | 'anime' | 'novel', type: SourceType, url: string): Promise<Source> {
+export async function install(medium: Medium, type: SourceType, json: any, url: string): Promise<Source> {
     switch(medium) {
         case 'manga':
-            return await MangaSource.install(type, url);
+            return await MangaSource.install(type, json, url);
     }
 }

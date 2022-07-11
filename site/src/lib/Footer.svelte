@@ -17,7 +17,6 @@
     async function mediumChanged() {
         await goto(`/${$currentMedium}/${$page.url.pathname.slice($page.url.pathname.slice(1).indexOf('/') + 2)}`)
     }
-
     let typeIndex = $currentMedium ? types.findIndex(type => type.type === $currentMedium) : 0;
 
     function handleClick(evt: MouseEvent) {

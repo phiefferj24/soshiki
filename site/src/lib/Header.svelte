@@ -63,7 +63,7 @@ import { loop_guard } from "svelte/internal";
                     <span class="dropdown-item-span">Account</span>
                 </a>
             {:else}
-                <a href="https://api.soshiki.moe/user/redirect/discord" class="dropdown-item" on:click={() => dropped = false}>
+                <a href="https://api.soshiki.moe/user/login/discord/redirect" class="dropdown-item" on:click={() => dropped = false}>
                     <i class="f7-icons dropdown-item-glyph">person_crop_circle_fill</i>
                     <span class="dropdown-item-span">Login</span>
                 </a>

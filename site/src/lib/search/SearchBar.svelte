@@ -1,12 +1,12 @@
 <script lang="ts">
     import { currentMedium } from '$lib/stores';
-    const placeholder = `Search ${$currentMedium === 'novel' ? 'light novels' : $currentMedium}`;
+    export let placeholder = `Search ${$currentMedium === 'novel' ? 'light novels' : $currentMedium}`;
     export let value = '';
 </script>
 
 <form on:submit|preventDefault>
     <div class="searchbar">
-        <input type="search" class="searchbar-search" autocorrect="off" placeholder={placeholder} bind:value />
+        <input type="search" class="searchbar-search" autocorrect="off" placeholder={placeholder} bind:value on:input />
         <i class="f7-icons searchbar-glyph">search</i>
     </div>
 </form>

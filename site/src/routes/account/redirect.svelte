@@ -36,6 +36,12 @@
             }
         }
     }
-    async function mal() {}
-    async function anilist() {}
+    async function mal() {
+        let id = Cookie.get("id");
+        user.set(await fetch(`https://api.soshiki.moe/user/${id}`).then(res => res.json()));
+    }
+    async function anilist() {
+        let id = Cookie.get("id");
+        user.set(await fetch(`https://api.soshiki.moe/user/${id}`).then(res => res.json()));
+    }
   </script>

@@ -1,9 +1,10 @@
+import type { Json } from 'soshiki-types';
 import type { Source } from '../source';
 
 import { AidokuSource } from './aidoku-ts/aidokuSource';
 
 export enum MangaSourceType {
-    Aidoku = 'aidoku',
+    aidoku = 'aidoku',
 }
 
 let mangaSourceClasses = {
@@ -18,7 +19,7 @@ export interface MangaSource extends Source {
     nsfw: number;
     image: string;
 
-    init(url: string): Promise<void>;
+    init(json: any, url: string): Promise<void>;
     getMangaList(filters: MangaFilter[], page: number): Promise<MangaPageResult>;
     getMangaListing(name: string, page: number): Promise<MangaPageResult>;
     getMangaDetails(id: string): Promise<Manga>;
@@ -26,9 +27,24 @@ export interface MangaSource extends Source {
     getMangaChapterPages(id: string, chapterId: string): Promise<MangaPage[]>;
 }
 
-export async function install(type: MangaSourceType, url: string): Promise<MangaSource> {
+export type ExternalMangaSource = {
+    name: string;
+    id: string;
+    version: string;
+    type: MangaSourceType;
+    nsfw: number;
+    image: string;
+    listUrl: string;
+}
+
+export function parseSourceList(type: MangaSourceType, data: any, url: string): ExternalMangaSource[] {
+    let sources = mangaSourceClasses[type].parseSourceList(data, url);
+    return sources;
+}
+
+export async function install(type: MangaSourceType, json: any, url: string): Promise<MangaSource> {
     let source = new mangaSourceClasses[type]();
-    await source.init(url);
+    await source.init(json, url);
     return source;
 }
 

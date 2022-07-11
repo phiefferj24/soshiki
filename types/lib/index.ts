@@ -23,6 +23,16 @@ export type Manifest = {
         },
         url: string;
         cdn: string;
+    },
+    mal: {
+        url: string;
+        id: string;
+        secret: string;
+    },
+    anilist: {
+        url: string;
+        id: string;
+        secret: string;
     }
 }
 
