@@ -90,6 +90,38 @@ function getToken(req: any) {
 app.use(cors);
 app.use(verify);
 
+app.get("/link/:medium/:platform/:source/:id", async (req, res) => {
+    const medium = req.params.medium;
+    const platform = req.params.platform;
+    const source = req.params.source;
+    const id = req.params.id;
+    if(!isMedium(medium)) {
+        res.status(400).send();
+        return;
+    }
+    let entry = await database.getLink(medium, platform, source, id);
+    res.send(entry);
+});
+
+app.post("/link/:medium/:platform/:source/:id", async (req, res) => {
+    const medium = req.params.medium;
+    const platform = req.params.platform;
+    const source = req.params.source;
+    const id = req.params.id;
+    const soshikiId = req.query.id as string;
+    if(!isMedium(medium) || !soshikiId) {
+        res.status(400).send();
+        return;
+    }
+    const token = getToken(req);
+    if(!token) {
+        res.status(401).send();
+        return;
+    }
+    await database.setLink(medium, platform, source, id, soshikiId);
+    res.send();
+});
+
 app.get("/info/:medium/:id", async (req, res) => {
     if(!isMedium(req.params.medium)) {
         res.status(400).send("Invalid medium");

@@ -1,15 +1,13 @@
 <script lang="ts">
-    import { page } from "$app/stores";
     export let cover: string = '';
     export let title: string = '';
     export let subtitle: string = '';
-    export let id: string = '';
-    export let sub: string = 'info';
+    export let href: string;
     $: rtitle = title.length > 40 ? title.substring(0, 37).trim() + '...' : title;
     $: rsubtitle = subtitle.length > 40 ? subtitle.substring(0, 37).trim() + '...' : subtitle;
 </script>
 
-<a href={`/${$page.params.medium}/${id}/${sub}`} class="listing-card" style:--cover="url({cover})">
+<a href={href || ""} class="listing-card" style:--cover="url({cover})" on:click>
     <span class="listing-card-title">{rtitle}</span>
     <span class="listing-card-subtitle">{rsubtitle}</span>
 </a>
@@ -41,9 +39,11 @@
         }
         &-title {
             font-size: 0.9rem;
+            overflow: hidden;
         }
         &-subtitle {
             font-size: 0.6rem;
+            overflow: hidden;
             color: $accent-text-color-light;
             @media (prefers-color-scheme: dark) {
                 color: $accent-text-color-dark;

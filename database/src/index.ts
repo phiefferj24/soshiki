@@ -57,7 +57,7 @@ export default class Database {
             let token = await this.client.query(`
                 INSERT INTO sessions (user_id, expires) VALUES ($1, CAST ($2 AS TIMESTAMP))
                 RETURNING id
-            `, [id, new Date(Date.now() + expires)]);
+            `, [id, new Date(Date.now() + expires * 1000)]);
             return token.rows[0].id;
         } catch (e) {
             return null;
@@ -776,6 +776,108 @@ export default class Database {
             await this.client.query(`
                 DELETE FROM novels
             `);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+    
+    async getLink(type: Medium, platform: string, source: string, id: string): Promise<string> {
+        switch(type) {
+            case 'manga': return await this.getMangaLink(platform, source, id);
+            case 'anime': return await this.getAnimeLink(platform, source, id);
+            case 'novel': return await this.getNovelLink(platform, source, id);
+            default: return '';
+        }
+    }
+    async getMangaLink(platform: string, source: string, id: string): Promise<string | null> {
+        try {
+            let data = await this.client.query(`
+                SELECT * FROM manga WHERE source_ids->$1->>$2 = $3
+            `, [platform, source, id]);
+            if (!data.rows.length) return null;
+            return data.rows[0].id;
+        } catch (e) {
+            return null;
+        }
+    }
+    async getAnimeLink(platform: string, source: string, id: string): Promise<string | null> {
+        try {
+            let data = await this.client.query(`
+                SELECT * FROM anime WHERE source_ids->$1->>$2 = $3
+            `, [platform, source, id]);
+            if (!data.rows.length) return null;
+            return data.rows[0].id;
+        } catch (e) {
+            return null;
+        }
+    }
+    async getNovelLink(platform: string, source: string, id: string): Promise<string | null> {
+        try {
+            let data = await this.client.query(`
+                SELECT * FROM novels WHERE source_ids->$1->>$2 = $3
+            `, [platform, source, id]);
+            if (!data.rows.length) return null;
+            return data.rows[0].id;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async setLink(type: Medium, platform: string, source: string, id: string, soshikiId: string): Promise<boolean> {
+        switch(type) {
+            case 'manga': return await this.setMangaLink(platform, source, id, soshikiId);
+            case 'anime': return await this.setAnimeLink(platform, source, id, soshikiId);
+            case 'novel': return await this.setNovelLink(platform, source, id, soshikiId);
+            default: return false;
+        }
+    }
+    async setMangaLink(platform: string, source: string, id: string, soshikiId: string): Promise<boolean> {
+        try {
+            let data = await this.client.query(`
+                SELECT source_ids FROM manga WHERE id = $1
+            `, [soshikiId]);
+            if (!data.rows.length) return false;
+            let source_ids = data.rows[0].source_ids;
+            if (!source_ids[platform]) source_ids[platform] = {};
+            source_ids[platform][source] = id;
+            await this.client.query(`
+                UPDATE manga SET source_ids = $1 WHERE id = $2
+            `, [source_ids, soshikiId]);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+    async setAnimeLink(platform: string, source: string, id: string, soshikiId: string): Promise<boolean> {
+        try {
+            let data = await this.client.query(`
+                SELECT source_ids FROM anime WHERE id = $1
+            `, [soshikiId]);
+            if (!data.rows.length) return false;
+            let source_ids = data.rows[0].source_ids;
+            if (!source_ids[platform]) source_ids[platform] = {};
+            source_ids[platform][source] = id;
+            await this.client.query(`
+                UPDATE anime SET source_ids = $1 WHERE id = $2
+            `, [source_ids, soshikiId]);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+    async setNovelLink(platform: string, source: string, id: string, soshikiId: string): Promise<boolean> {
+        try {
+            let data = await this.client.query(`
+                SELECT source_ids FROM novels WHERE id = $1
+            `, [soshikiId]);
+            if (!data.rows.length) return false;
+            let source_ids = data.rows[0].source_ids;
+            if (!source_ids[platform]) source_ids[platform] = {};
+            source_ids[platform][source] = id;
+            await this.client.query(`
+                UPDATE novels SET source_ids = $1 WHERE id = $2
+            `, [source_ids, soshikiId]);
             return true;
         } catch (e) {
             return false;

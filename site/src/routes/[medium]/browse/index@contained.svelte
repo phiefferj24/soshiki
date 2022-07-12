@@ -81,7 +81,7 @@ import { goto } from "$app/navigation";
         let target = event.target as HTMLElement;
         let platform = target.dataset.platform;
         let id = target.dataset.id;
-        await goto(`${$page.url.toString()}/${platform}/${id}`);
+        if(platform && id) await goto(`${$page.url.toString()}/${platform}/${id}`);
     }
 </script>
 

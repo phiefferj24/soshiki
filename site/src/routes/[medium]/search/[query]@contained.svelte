@@ -35,7 +35,12 @@
         {#await results then results} 
             {#each results as result}
                 <div class="result">
-                    <ListingCard cover={result.info.cover} title={result.info.title} subtitle={result.info.author} id={result.id} />
+                    <ListingCard 
+                        cover={result.info.cover} 
+                        title={result.info.title} 
+                        subtitle={result.info.author} 
+                        href={`/${$currentMedium}/${result.id}/info`}
+                    />
                 </div>
             {/each}
         {/await}

@@ -1,9 +1,12 @@
 <script lang="ts">
     import { page } from "$app/stores";
     import * as Sources from "$lib/sources";
-    import type * as MangaSource from "soshiki-packages/manga/mangaSource";
+    import * as MangaSource from "soshiki-packages/manga/mangaSource";
     import type { Source } from "soshiki-packages/source";
     import { onMount } from "svelte";
+    import SearchBar from "$lib/search/SearchBar.svelte";
+    import ListingCard from "$lib/listing/ListingCard.svelte";
+    import manifest from "$lib/manifest";
     let medium = $page.params.medium;
     let sourceId = $page.params.source;
     let platform = $page.params.platform;
@@ -15,12 +18,49 @@
         mounted = true;
     }
     onMount(init);
+    let searchText: string;
+    async function updateMangaList() {
+        let filters: MangaSource.MangaFilter[] = [];
+        if (searchText && searchText.length > 0) {
+            filters.push({
+                name: "Title",
+                type: MangaSource.MangaFilterType.text,
+                value: searchText,
+                index: 0
+            });
+        }
+        list = await source.getMangaList(filters, 1);
+    }
 </script>
 
 {#if mounted}
-    {#each list.manga as manga}
-        <p>{manga.title}</p>
-    {:else}
-        <p>Nothing</p>
-    {/each}
+    <SearchBar placeholder="Search {source.name}" on:submit={updateMangaList} bind:value={searchText}/>
+    <div class="results">
+        {#each list.manga as manga}
+            <div class="result">
+                <ListingCard 
+                    title={manga.title || ""}
+                    subtitle={manga.author || ""}
+                    cover={`${manifest.proxy.url}/${manga.cover}` || ""}
+                    href={`/${medium}/browse/${platform}/${sourceId}/id/${manga.id}/info`}
+                />
+            </div>
+        {:else}
+            <h1>No results.</h1>
+        {/each}
+    </div>
 {/if}
+
+<style lang="scss">
+    .results {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+    .result {
+        width: 10rem;
+        height: 15rem;
+    }
+</style>

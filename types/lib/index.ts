@@ -36,6 +36,21 @@ export type Manifest = {
     }
 }
 
+export type PublicManifest = {
+    api: {
+        url: string;
+        port: number;
+    },
+    site: {
+        url: string;
+        port: number;
+    },
+    proxy: {
+        url: string;
+        port: number;
+    }
+}
+
 export enum Status {
     unknown,
     ongoing,

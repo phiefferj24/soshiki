@@ -1,3 +1,3 @@
-import type { Manifest } from "soshiki-types";
+import type { PublicManifest } from "soshiki-types";
 import manifest from "../../../manifest.json";
-export default manifest as Manifest;
+export default manifest as PublicManifest;
