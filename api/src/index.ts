@@ -22,9 +22,13 @@ const whitelist = [
     "https://discordapp.com", 
     "https://discord.com"];
 const whitelistedPaths = [
+    '/user/login/discord/redirect',
     '/user/login/discord',
-    '/user/redirect/discord'
+    '/user/connect/mal',
+    '/user/connect/anilist',
 ];
+const corsWhitelistedMethods = [];
+const unverifiedMethods = ['GET', 'OPTIONS'];
 const connections = ['mal', 'anilist'];
 
 
@@ -35,7 +39,7 @@ const isMedium = (medium: string): medium is Medium => {
 }
 
 const cors = (req: any, res: any, next: any) => {
-    if(whitelistedPaths.includes(req.path) || req.method === 'OPTIONS' || req.method === 'GET') {
+    if(corsWhitelistedMethods.includes(req.method) || whitelistedPaths.includes(req.path)) {
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
         res.header('Access-Control-Allow-Credentials', 'true');
@@ -53,11 +57,7 @@ const cors = (req: any, res: any, next: any) => {
 }
 
 const verify = async (req: any, res: any, next: any) => {
-    if(req.method === 'OPTIONS' || req.method === 'GET') {
-        next();
-        return;
-    }
-    if(whitelistedPaths.includes(req.path)) {
+    if(unverifiedMethods.includes(req.method) || whitelistedPaths.includes(req.path)) {
         next();
         return;
     }
@@ -81,7 +81,7 @@ function getToken(req: any) {
     if(req.headers.authorization) {
         const [type, token] = req.headers.authorization.split(' ');
         if(type === 'Bearer') {
-            return token;
+            return decodeURIComponent(token);
         }
     }
     return null;
@@ -100,7 +100,7 @@ app.get("/link/:medium/:platform/:source/:id", async (req, res) => {
         return;
     }
     let entry = await database.getLink(medium, platform, source, id);
-    res.send(entry);
+    res.send({id: entry});
 });
 
 app.post("/link/:medium/:platform/:source/:id", async (req, res) => {
@@ -192,20 +192,26 @@ app.get('/user/login/discord/redirect', async (req, res) => {
 app.get('/user/login/discord', async (req, res) => {
     let code = req.query.code.toString();
     let json = await Discord.authorize(code);
-    let access = json.access_token;
-    let refresh = json.refresh_token;
+    let daccess = json.access_token;
+    let drefresh = json.refresh_token;
     let expires = json.expires_in;
-    let user = await fetch(`${manifest.discord.url}/users/@me`, { headers: { Authorization: `Bearer ${access}` } }).then(res => res.json());
-    let {id, session} = await database.login(user.id, access, refresh, expires);
-    res.redirect(`${manifest.site.url}/account/redirect?type=discord&id=${id}&session=${session}&expires=${expires}`);
+    let user = await fetch(`${manifest.discord.url}/users/@me`, { headers: { Authorization: `Bearer ${daccess}` } }).then(res => res.json());
+    let {id, access, refresh} = await database.login(user.id, daccess, drefresh, expires);
+    res.redirect(`${manifest.site.url}/account/redirect?type=discord&id=${id}&access=${access}&refresh=${refresh}&expires=${expires}`);
 });
 
 app.get('/user/login/discord/refresh', async (req, res) => {
-    let id = req.query.id.toString();
+    let id = req.query.access.toString();
     let user = await database.getUser(id);
     let discord = await Discord.refresh(user.refresh);
     let login = await database.login(user.discord, discord.access, discord.refresh, discord.expires);
     res.send(login);
+});
+
+app.get('/user/login/refresh', async (req, res) => {
+    let refresh = req.query.refresh.toString();
+    let session = await database.refreshSession(refresh, new Date().getTime() + 1000 * 60 * 60 * 24 * 14);
+    res.send(session);
 });
 
 function generateChallenge() {
@@ -218,7 +224,7 @@ app.get('/user/connect/:type/redirect', async (req, res) => {
         res.status(400).send("Invalid connection type");
         return;
     }
-    let token = req.query.token?.toString() || getToken(req);
+    let token = req.query.access?.toString() || getToken(req);
     if (!token) {
         res.status(401).send();
         return;

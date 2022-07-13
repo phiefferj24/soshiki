@@ -22,11 +22,11 @@
     let headerTextHeight = 0;
     async function updateLink() {
         let res = await fetch(`${manifest.api.url}/link/${medium}/${platform}/${sourceId}/${$page.params.id}`);
-        let text = await res.text();
-        if (!text || text.length === 0) {
+        let json = await res.json();
+        if (!json || !json.id || json.id.length === 0) {
             link = null;
         } else {
-            link = text;
+            link = json.id;
         }
     }
     page.subscribe(async () => await updateLink());

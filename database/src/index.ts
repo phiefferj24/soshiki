@@ -12,7 +12,7 @@ export default class Database {
         return new Database(client);
     }
 
-    async login(discord: string, access: string, refresh: string, expires: number): Promise<{id: string, session: string} | null> {
+    async login(discord: string, access: string, refresh: string, expires: number): Promise<{id: string, access: string, refresh: string} | null> {
         try {
             let existing = await this.client.query(`
                 SELECT * FROM users WHERE discord = $1
@@ -23,15 +23,15 @@ export default class Database {
                     VALUES ($1, $2, $3)
                     RETURNING id
                 `, [discord, access, refresh]);
-                let session = await this.refreshSession(id.rows[0].id, expires);
-                return {id: id.rows[0].id, session: session};
+                let session = await this.getSession(id.rows[0].id, expires * 1000);
+                return {id: id.rows[0].id, access: session.access, refresh: session.refresh};
             } else {
                 let id = await this.client.query(`
                     UPDATE users SET access = $1, refresh = $2 WHERE discord = $3 RETURNING id
                 `, [access, refresh, discord]
                 );
-                let session = await this.refreshSession(id.rows[0].id, expires);
-                return {id: id.rows[0].id, session: session};
+                let session = await this.getSession(id.rows[0].id, expires * 1000);
+                return {id: id.rows[0].id, access: session.access, refresh: session.refresh};
             }
         } catch (e) {
             return null;
@@ -41,7 +41,7 @@ export default class Database {
     async verify(token: string): Promise<boolean> {
         try {
             let res = await this.client.query(`
-                SELECT * FROM sessions WHERE id = $1
+                SELECT * FROM sessions WHERE access = $1
             `, [token]);
             if (res.rows.length === 0) {
                 return false;
@@ -52,13 +52,24 @@ export default class Database {
         }
     }
 
-    async refreshSession(id: string, expires: number): Promise<string | null> {
+    async getSession(id: string, expires: number): Promise<Json | null> {
         try {
             let token = await this.client.query(`
-                INSERT INTO sessions (user_id, expires) VALUES ($1, CAST ($2 AS TIMESTAMP))
-                RETURNING id
-            `, [id, new Date(Date.now() + expires * 1000)]);
-            return token.rows[0].id;
+                INSERT INTO sessions (id, expires) VALUES ($1, CAST ($2 AS TIMESTAMP))
+                RETURNING *
+            `, [id, new Date(Date.now() + expires)]);
+            return token.rows[0];
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async refreshSession(token: string, expires: number): Promise<Json | null> {
+        try {
+            let session = await this.client.query(`
+                DELETE FROM sessions WHERE refresh = $1 RETURNING *
+            `, [token]);
+            return await this.getSession(session.rows[0].id, expires);
         } catch (e) {
             return null;
         }
@@ -67,7 +78,7 @@ export default class Database {
     async logout(token: string): Promise<boolean> {
         try {
             await this.client.query(`
-                DELETE FROM sessions WHERE id = $1
+                DELETE FROM sessions WHERE access = $1
             `, [token]);
             return true;
         } catch (e) {
@@ -101,10 +112,10 @@ export default class Database {
     async getUserId(token: string): Promise<string | null> {
         try {
             const result = await this.client.query(`
-                SELECT user_id FROM sessions WHERE id = $1
+                SELECT id FROM sessions WHERE access = $1
             `, [token]
             );
-            return result.rows[0].user_id;
+            return result.rows[0].id;
         } catch (e) {
             return null;
         }

@@ -8,14 +8,16 @@
     import { goto } from '$app/navigation';
     let mounted = false;
     async function init() {
-        let session = Cookie.get("session");
+        let access = Cookie.get("access");
+        let refresh = Cookie.get("refresh");
         let id = Cookie.get("id");
-        if (session && id) {
+        if (access && id) {
             setUser(id);
-        } else if (id) {
-            let res = await fetch(`https://api.soshiki.moe/user/login/discord/refresh?id=${id}`);
+        } else if (id && refresh) {
+            let res = await fetch(`https://api.soshiki.moe/user/login/refresh?refresh=${refresh}`);
             let data = await res.json();
-            Cookie.set("session", data.session, { expires: new Date(Date.now() + data.expires) });
+            Cookie.set("access", data.access, { expires: new Date(Date.now() + data.expires) });
+            Cookie.set("refresh", data.refresh, { expires: new Date(Date.now() + data.expires * 2) });
             setUser(data.id);
         } else if ($page.url.pathname !== "/account/redirect") {
             await goto("https://api.soshiki.moe/user/login/discord/redirect", { replaceState: true });

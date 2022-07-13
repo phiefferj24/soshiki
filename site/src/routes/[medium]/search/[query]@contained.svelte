@@ -10,7 +10,7 @@
     $: savedQuery = $page.params.query, updateResults();
     let results: any;
     function updateResults() {
-        results = fetch(`${manifest.api.url}/${$currentMedium}/search/${query}`)
+        results = fetch(`${manifest.api.url}/info/${$currentMedium}/search/${query}`)
             .then(res => res.json());
     }
     async function submit() {

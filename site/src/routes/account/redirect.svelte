@@ -28,10 +28,12 @@
         let id = $page.url.searchParams.get("id");
         if (id) {
             Cookie.set("id", id, { expires: 365 });
-            let session = $page.url.searchParams.get("session");
+            let access = $page.url.searchParams.get("access");
+            let refresh = $page.url.searchParams.get("refresh");
             let expires = parseInt($page.url.searchParams.get("expires"));
-            if (session && expires) {
-                Cookie.set("session", session, { expires: new Date(Date.now() + expires) });
+            if (access && refresh && expires) {
+                Cookie.set("access", access, { expires: new Date(Date.now() + expires) });
+                Cookie.set("refresh", refresh, { expires: new Date(Date.now() + expires * 2) });
                 user.set(await fetch(`https://api.soshiki.moe/user/${id}`).then(res => res.json()));
             }
         }

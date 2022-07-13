@@ -6,7 +6,7 @@
     let id = $page.params.id;
     let info = fetch(`${manifest.api.url}/info/${medium}/${id}`, {
         headers: {
-            Authorization: `Bearer ${Cookie.get("session")}`
+            Authorization: `Bearer ${Cookie.get("access")}`
         }
     }).then(res => res.json()).then(json => json.info);
     let headerTextHeight = 0;
@@ -52,11 +52,11 @@
                 <div class="info-header-statuses">
                     <div class="info-header-status">
                         <div class="info-header-status-chip" style:background-color={info.mal ? "green" : "red"}></div>
-                        <a href="https://myanimelist.net/anime/{info.mal.id}" class="info-header-status">MAL</a>
+                        <a href={info.mal ? `https://myanimelist.net/anime/${info.mal.id}` : ""} class="info-header-status">MAL</a>
                     </div>
                     <div class="info-header-status">
                         <div class="info-header-status-chip" style:background-color={info.anilist ? "green" : "red"}></div>
-                        <a href="https://anilist.co/anime/{info.anilist.id}" class="info-header-status">ANILIST</a>
+                        <a href={info.anilist ? `https://anilist.co/anime/${info.anilist.id}`: ""} class="info-header-status">ANILIST</a>
                     </div>
                 </div>
             </div>

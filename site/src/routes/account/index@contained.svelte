@@ -41,7 +41,7 @@
                     <span>Connected - {mal.name}</span>
                 {:else}
                     <span>Not Connected</span>
-                    <a href="{"https://api.soshiki.moe/user/connect/mal/redirect?token=" + Cookie.get("session")}">Connect</a>
+                    <a href="{"https://api.soshiki.moe/user/connect/mal/redirect?token=" + Cookie.get("access")}">Connect</a>
                 {/if}
             </div>
         </div>
@@ -52,7 +52,7 @@
                     <span>Connected - {anilist.name}</span>
                 {:else}
                     <span>Not Connected</span>
-                    <a href="{"https://api.soshiki.moe/user/connect/anilist/redirect?token=" + Cookie.get("session")}">Connect</a>
+                    <a href="{"https://api.soshiki.moe/user/connect/anilist/redirect?token=" + Cookie.get("access")}">Connect</a>
                 {/if}
             </div>
         </div>

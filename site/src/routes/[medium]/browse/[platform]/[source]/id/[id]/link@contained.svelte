@@ -43,7 +43,7 @@
             await fetch(`${manifest.api.url}/link/${$page.params.medium}/${$page.params.platform}/${$page.params.source}/${$page.params.id}?id=${id}`, {
                 method: "POST",
                 headers: {
-                    Authorization: `Bearer ${Cookie.get("session")}`
+                    Authorization: `Bearer ${Cookie.get("access")}`
                 }
             });
             await goto("./info");
