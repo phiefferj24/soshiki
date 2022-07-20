@@ -1,12 +1,13 @@
 <script lang="ts">
     import { page } from "$app/stores";
     import * as Sources from "$lib/sources";
-    import * as MangaSource from "soshiki-packages/manga/mangaSource";
-    import type { Source } from "soshiki-packages/source";
+    import type * as MangaSource from "soshiki-packages/manga/mangaSource";
+    import * as Source from "soshiki-packages/source";
     import { onMount } from "svelte";
     import SearchBar from "$lib/search/SearchBar.svelte";
     import ListingCard from "$lib/listing/ListingCard.svelte";
     import manifest from "$lib/manifest";
+import LoadingBar from "$lib/LoadingBar.svelte";
     let medium = $page.params.medium;
     let sourceId = $page.params.source;
     let platform = $page.params.platform;
@@ -20,21 +21,16 @@
     onMount(init);
     let searchText: string;
     async function updateMangaList() {
-        let filters: MangaSource.MangaFilter[] = [];
+        let filters: Source.Filter[] = [];
         if (searchText && searchText.length > 0) {
-            filters.push({
-                name: "Title",
-                type: MangaSource.MangaFilterType.text,
-                value: searchText,
-                index: 0
-            });
+            filters.push(new Source.TextFilter("Title", searchText));
         }
         list = await source.getMangaList(filters, 1);
     }
 </script>
 
 {#if mounted}
-    <SearchBar placeholder="Search {source.name}" on:submit={updateMangaList} bind:value={searchText}/>
+    <SearchBar placeholder="Search {source.name}" on:submit={updateMangaList} bind:value={searchText} filters={[]}/>
     <div class="results">
         {#each list.manga as manga}
             <div class="result">
@@ -49,6 +45,8 @@
             <h1>No results.</h1>
         {/each}
     </div>
+{:else}
+    <LoadingBar />
 {/if}
 
 <style lang="scss">

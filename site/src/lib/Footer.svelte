@@ -144,7 +144,7 @@
             }
         }
         *[class*="-glyph"] {
-            font-size: 1.125rem !important;
+            font-size: 1.125rem;
         }
     }
 </style>

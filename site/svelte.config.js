@@ -16,7 +16,7 @@ const config = {
                     scss: {
                         additionalData: `@use "src/styles/global.scss" as *;`
                     }
-				}
+				},
 			},
 			server: {
 				host: true

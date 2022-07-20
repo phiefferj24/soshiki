@@ -8,6 +8,7 @@
     import * as Sources from "$lib/sources"
     import type * as MangaSource from "soshiki-packages/manga/mangaSource";
     import Cookie from "js-cookie";
+import LoadingBar from "$lib/LoadingBar.svelte";
 
     let source: MangaSource.MangaSource;
     let mounted = false;
@@ -40,7 +41,7 @@
             el = el.parentElement;
         }
         if(id) {
-            await fetch(`${manifest.api.url}/link/${$page.params.medium}/${$page.params.platform}/${$page.params.source}/${$page.params.id}?id=${id}`, {
+            await fetch(`${manifest.api.url}/link/${$page.params.medium}/${$page.params.platform}/${$page.params.source}/${$page.params.id}/${id}`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${Cookie.get("access")}`
@@ -73,6 +74,8 @@
             {/each}
         </div>
     {/if}
+{:else}
+    <LoadingBar />
 {/if}
 <style lang="scss">
     @use "../../../../../../../styles/global.scss" as *;

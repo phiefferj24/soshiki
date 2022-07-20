@@ -161,6 +161,22 @@ export default class Database {
         }
     }
 
+    async deleteUserConnection(id: string, connection: string): Promise<boolean> {
+        try {
+            let data = await this.client.query(`
+                SELECT connections FROM users WHERE id = $1
+            `, [id]);
+            data = data.rows[0].connections;
+            delete data[connection];
+            await this.client.query(`
+                UPDATE users SET connections = $1 WHERE id = $2
+            `, [data, id]);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
     async setUserData(id: string, key: string, value: any): Promise<boolean> {
         try {
             let data = await this.client.query(`
@@ -168,6 +184,22 @@ export default class Database {
             `, [id]);
             data = data.rows[0].data;
             data[key] = value;
+            await this.client.query(`
+                UPDATE users SET data = $1 WHERE id = $2
+            `, [data, id]);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    async deleteUserData(id: string, key: string): Promise<boolean> {
+        try {
+            let data = await this.client.query(`
+                SELECT data FROM users WHERE id = $1
+            `, [id]);
+            data = data.rows[0].data;
+            delete data[key];
             await this.client.query(`
                 UPDATE users SET data = $1 WHERE id = $2
             `, [data, id]);
@@ -793,7 +825,7 @@ export default class Database {
         }
     }
     
-    async getLink(type: Medium, platform: string, source: string, id: string): Promise<string> {
+    async getLink(type: Medium, platform: string, source: string, id: string): Promise<string | null> {
         switch(type) {
             case 'manga': return await this.getMangaLink(platform, source, id);
             case 'anime': return await this.getAnimeLink(platform, source, id);
@@ -804,7 +836,7 @@ export default class Database {
     async getMangaLink(platform: string, source: string, id: string): Promise<string | null> {
         try {
             let data = await this.client.query(`
-                SELECT * FROM manga WHERE source_ids->$1->>$2 = $3
+                SELECT * FROM manga WHERE source_ids->$1->$2->>'id' = $3
             `, [platform, source, id]);
             if (!data.rows.length) return null;
             return data.rows[0].id;
@@ -815,7 +847,7 @@ export default class Database {
     async getAnimeLink(platform: string, source: string, id: string): Promise<string | null> {
         try {
             let data = await this.client.query(`
-                SELECT * FROM anime WHERE source_ids->$1->>$2 = $3
+                SELECT * FROM anime WHERE source_ids->$1->$2->>'id' = $3
             `, [platform, source, id]);
             if (!data.rows.length) return null;
             return data.rows[0].id;
@@ -826,7 +858,7 @@ export default class Database {
     async getNovelLink(platform: string, source: string, id: string): Promise<string | null> {
         try {
             let data = await this.client.query(`
-                SELECT * FROM novels WHERE source_ids->$1->>$2 = $3
+                SELECT * FROM novels WHERE source_ids->$1->$2->>'id' = $3
             `, [platform, source, id]);
             if (!data.rows.length) return null;
             return data.rows[0].id;
@@ -835,15 +867,15 @@ export default class Database {
         }
     }
 
-    async setLink(type: Medium, platform: string, source: string, id: string, soshikiId: string): Promise<boolean> {
+    async setLink(type: Medium, platform: string, source: string, id: string, user: string, soshikiId: string): Promise<boolean> {
         switch(type) {
-            case 'manga': return await this.setMangaLink(platform, source, id, soshikiId);
-            case 'anime': return await this.setAnimeLink(platform, source, id, soshikiId);
-            case 'novel': return await this.setNovelLink(platform, source, id, soshikiId);
+            case 'manga': return await this.setMangaLink(platform, source, id, user, soshikiId);
+            case 'anime': return await this.setAnimeLink(platform, source, id, user, soshikiId);
+            case 'novel': return await this.setNovelLink(platform, source, id, user, soshikiId);
             default: return false;
         }
     }
-    async setMangaLink(platform: string, source: string, id: string, soshikiId: string): Promise<boolean> {
+    async setMangaLink(platform: string, source: string, id: string, user: string, soshikiId: string): Promise<boolean> {
         try {
             let data = await this.client.query(`
                 SELECT source_ids FROM manga WHERE id = $1
@@ -851,7 +883,7 @@ export default class Database {
             if (!data.rows.length) return false;
             let source_ids = data.rows[0].source_ids;
             if (!source_ids[platform]) source_ids[platform] = {};
-            source_ids[platform][source] = id;
+            source_ids[platform][source] = {id: id, user: user};
             await this.client.query(`
                 UPDATE manga SET source_ids = $1 WHERE id = $2
             `, [source_ids, soshikiId]);
@@ -860,7 +892,7 @@ export default class Database {
             return false;
         }
     }
-    async setAnimeLink(platform: string, source: string, id: string, soshikiId: string): Promise<boolean> {
+    async setAnimeLink(platform: string, source: string, id: string, user: string, soshikiId: string): Promise<boolean> {
         try {
             let data = await this.client.query(`
                 SELECT source_ids FROM anime WHERE id = $1
@@ -868,7 +900,7 @@ export default class Database {
             if (!data.rows.length) return false;
             let source_ids = data.rows[0].source_ids;
             if (!source_ids[platform]) source_ids[platform] = {};
-            source_ids[platform][source] = id;
+            source_ids[platform][source] = {id: id, user: user};
             await this.client.query(`
                 UPDATE anime SET source_ids = $1 WHERE id = $2
             `, [source_ids, soshikiId]);
@@ -877,7 +909,7 @@ export default class Database {
             return false;
         }
     }
-    async setNovelLink(platform: string, source: string, id: string, soshikiId: string): Promise<boolean> {
+    async setNovelLink(platform: string, source: string, id: string, user: string, soshikiId: string): Promise<boolean> {
         try {
             let data = await this.client.query(`
                 SELECT source_ids FROM novels WHERE id = $1
@@ -885,7 +917,7 @@ export default class Database {
             if (!data.rows.length) return false;
             let source_ids = data.rows[0].source_ids;
             if (!source_ids[platform]) source_ids[platform] = {};
-            source_ids[platform][source] = id;
+            source_ids[platform][source] = {id: id, user: user};
             await this.client.query(`
                 UPDATE novels SET source_ids = $1 WHERE id = $2
             `, [source_ids, soshikiId]);

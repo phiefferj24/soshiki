@@ -1,5 +1,5 @@
 import type { Json } from 'soshiki-types';
-import type { Source } from '../source';
+import type { Source, Filter } from '../source';
 
 import { AidokuSource } from './aidoku-ts/aidokuSource';
 
@@ -20,7 +20,8 @@ export interface MangaSource extends Source {
     image: string;
 
     init(json: any, url: string): Promise<void>;
-    getMangaList(filters: MangaFilter[], page: number): Promise<MangaPageResult>;
+    getFilters(): Promise<Filter[]>;
+    getMangaList(filters: Filter[], page: number): Promise<MangaPageResult>;
     getMangaListing(name: string, page: number): Promise<MangaPageResult>;
     getMangaDetails(id: string): Promise<Manga>;
     getMangaChapters(id: string): Promise<MangaChapter[]>;
@@ -86,32 +87,6 @@ export enum MangaContentRating {
     safe,
     suggestive,
     nsfw,
-}
-
-export class MangaFilter {
-    name: string;
-    type: MangaFilterType;
-    value?: string | string[];
-    ids?: any[];
-    ascending?: boolean;
-    index: number = 0;
-
-    constructor(name: string, type: MangaFilterType, value?: string | string[], ids?: any[], ascending?: boolean, index: number = 0) {
-        this.name = name;
-        this.type = type;
-        this.value = value;
-        this.ids = ids;
-        this.ascending = ascending;
-        this.index = index;
-    }
-}
-
-export enum MangaFilterType {
-    text,
-    singleSelect,
-    singleSelectAscendable,
-    multiSelect,
-    multiSelectAscendable,
 }
 
 export class MangaChapter {
