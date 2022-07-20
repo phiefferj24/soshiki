@@ -5,7 +5,8 @@
     import { goto } from "$app/navigation";
     import { onMount } from "svelte";
     import LoadingBar from "$lib/LoadingBar.svelte";
-import List from "$lib/List.svelte";
+    import List from "$lib/List.svelte";
+    import Dropdown from "$lib/Dropdown.svelte";
 
     export let source: MangaSource;
     let chapters: MangaChapter[];
@@ -19,11 +20,14 @@ import List from "$lib/List.svelte";
     let chapterId = $page.params.chapter;
 
     let pagesDiv: HTMLDivElement;
-    let rawScroll = 0;
+    let rawScrollLeft = 0;
+    let rawScrollTop = 0;
     let rawPagesWidth = 0;
+    let rawPagesHeights: number[] = [];
     let dpr = window.devicePixelRatio;
     $: pagesWidth = rawPagesWidth / dpr;
-    $: scroll = rawScroll / dpr;
+    $: scrollLeft = rawScrollLeft / dpr;
+    $: scrollTop = rawScrollTop / dpr;
 
     let overlay: HTMLDivElement;
 
@@ -37,17 +41,25 @@ import List from "$lib/List.svelte";
 
     let settingsOpen = false;
 
+    enum ReadingMode {
+        ltr = "Left to Right",
+        rtl = "Right to Left",
+        vertical = "Vertical"
+    }
+    export let readingMode = ReadingMode.ltr;
+    $: updateReadingMode(readingMode);
+
     $: {
         if (mounted && loadedPages === previousChapterPages.length + chapterPages.length + nextChapterPages.length) {
             scrollToPage();
         }
     }
 
-    $: updatePageNumber(scroll);
+    $: updatePageNumber(scrollLeft);
 
     function updatePageNumber(scroll: number) {
         if (!mounted) return;
-        let newPageNumber = Math.floor(scroll / pagesWidth + 0.5) - previousChapterPages.length;
+        let newPageNumber = readingMode === ReadingMode.rtl ? chapterPages.length + 1 - Math.floor(scroll / pagesWidth + 0.5) + nextChapterPages.length : Math.floor(scroll / pagesWidth + 0.5) - previousChapterPages.length;
         if (newPageNumber !== pageNum) {
             let params = new URLSearchParams();
             params.set("page", newPageNumber.toString());
@@ -55,8 +67,68 @@ import List from "$lib/List.svelte";
             previousPage = pageNum;
             pageNum = newPageNumber;
         }
-        if (scroll / pagesWidth - previousChapterPages.length <= 0 && !changingChapter && previousPage > pageNum) changeChapter(Direction.reverse);
-        else if (scroll / pagesWidth - previousChapterPages.length >= chapterPages.length + 1 && !changingChapter && previousPage < pageNum) changeChapter(Direction.forward);
+        if (readingMode === ReadingMode.rtl) {
+            if (chapterPages.length + 1 - scroll / pagesWidth + nextChapterPages.length <= 0 && !changingChapter && previousPage > pageNum) changeChapter(Direction.reverse);
+            else if (chapterPages.length + 1 - scroll / pagesWidth + nextChapterPages.length >= chapterPages.length + 1 && !changingChapter && previousPage < pageNum) changeChapter(Direction.forward);
+        } else {
+            if (scroll / pagesWidth - previousChapterPages.length <= 0 && !changingChapter && previousPage > pageNum) changeChapter(Direction.reverse);
+            else if (scroll / pagesWidth - previousChapterPages.length >= chapterPages.length + 1 && !changingChapter && previousPage < pageNum) changeChapter(Direction.forward);
+        }
+    }
+
+    function updateReadingMode(mode: ReadingMode) {
+        if (!mounted) return;
+        loadedPages = 0;
+        for (let i = 0; i < pagesDiv.children.length; i++) {
+            let item = pagesDiv.children.item(i);
+            if (item.getAttribute("data-chapter") || item.getAttribute("data-chapterprev")) {
+                item.remove();
+                i--; 
+            }
+        }
+        if (mode === ReadingMode.ltr) {
+            for (let item of previousChapterPages) {
+                pagesDiv.appendChild(createPage(item, chapterIndex + 1));
+            }
+            pagesDiv.appendChild(createInfoPage(chapterIndex));
+            for (let item of chapterPages) {
+                pagesDiv.appendChild(createPage(item, chapterIndex));
+            }
+            pagesDiv.appendChild(createInfoPage(chapterIndex - 1));
+            for (let item of nextChapterPages) {
+                pagesDiv.appendChild(createPage(item, chapterIndex - 1));
+            }
+            ignoreNextScroll = true;
+            pagesDiv.scrollTo({ left: (previousChapterPages.length + pageNum) * pagesWidth * dpr });
+        } else if (mode === ReadingMode.rtl) {
+            for (let item of nextChapterPages.reverse()) {
+                pagesDiv.appendChild(createPage(item, chapterIndex - 1));
+            }
+            pagesDiv.appendChild(createInfoPage(chapterIndex - 1));
+            for (let item of chapterPages.reverse()) {
+                pagesDiv.appendChild(createPage(item, chapterIndex));
+            }
+            pagesDiv.appendChild(createInfoPage(chapterIndex));
+            for (let item of previousChapterPages.reverse()) {
+                pagesDiv.appendChild(createPage(item, chapterIndex + 1));
+            }
+            ignoreNextScroll = true;
+            pagesDiv.scrollTo({ left: (previousChapterPages.length + pageNum) * pagesWidth * dpr });
+        } else {
+            for (let item of previousChapterPages) {
+                pagesDiv.appendChild(createPage(item, chapterIndex + 1));
+            }
+            pagesDiv.appendChild(createInfoPage(chapterIndex));
+            for (let item of chapterPages) {
+                pagesDiv.appendChild(createPage(item, chapterIndex));
+            }
+            pagesDiv.appendChild(createInfoPage(chapterIndex - 1));
+            for (let item of nextChapterPages) {
+                pagesDiv.appendChild(createPage(item, chapterIndex - 1));
+            }
+            ignoreNextScroll = true;
+            pagesDiv.scrollTo({ top: (previousChapterPages.length + pageNum) * pagesWidth * dpr });
+        }
     }
 
     enum Direction {
@@ -71,19 +143,37 @@ import List from "$lib/List.svelte";
         chapterPages = await source.getMangaChapterPages(mangaId, chapterId);
         pageNum = parseInt($page.url.searchParams.get("page") ?? "1");
         await loadChapters(Direction.none);
-        for (let item of previousChapterPages) {
-            pagesDiv.appendChild(createPage(item, chapterIndex + 1));
-        }
-        pagesDiv.appendChild(createInfoPage(chapterIndex));
-        for (let item of chapterPages) {
-            pagesDiv.appendChild(createPage(item, chapterIndex));
-        }
-        pagesDiv.appendChild(createInfoPage(chapterIndex - 1));
-        for (let item of nextChapterPages) {
-            pagesDiv.appendChild(createPage(item, chapterIndex - 1));
+        if (readingMode === ReadingMode.rtl) {
+            for (let item of nextChapterPages.reverse()) {
+                pagesDiv.appendChild(createPage(item, chapterIndex - 1));
+            }
+            pagesDiv.appendChild(createInfoPage(chapterIndex - 1));
+            for (let item of chapterPages.reverse()) {
+                pagesDiv.appendChild(createPage(item, chapterIndex));
+            }
+            pagesDiv.appendChild(createInfoPage(chapterIndex));
+            for (let item of previousChapterPages.reverse()) {
+                pagesDiv.appendChild(createPage(item, chapterIndex + 1));
+            }
+        } else {
+            for (let item of previousChapterPages) {
+                pagesDiv.appendChild(createPage(item, chapterIndex + 1));
+            }
+            pagesDiv.appendChild(createInfoPage(chapterIndex));
+            for (let item of chapterPages) {
+                pagesDiv.appendChild(createPage(item, chapterIndex));
+            }
+            pagesDiv.appendChild(createInfoPage(chapterIndex - 1));
+            for (let item of nextChapterPages) {
+                pagesDiv.appendChild(createPage(item, chapterIndex - 1));
+            }
         }
         ignoreNextScroll = true;
-        pagesDiv.scrollTo({ left: (previousChapterPages.length + pageNum) * pagesWidth * dpr });
+        if (readingMode === ReadingMode.rtl) {
+            pagesDiv.scrollTo({ left: (nextChapterPages.length + chapterPages.length + 1 - pageNum) * pagesWidth * dpr });
+        } else {
+            pagesDiv.scrollTo({ left: (previousChapterPages.length + pageNum) * pagesWidth * dpr });
+        }
         mounted = true;
     }
 
@@ -95,7 +185,7 @@ import List from "$lib/List.svelte";
             if (overlay.children.length > 1) overlay.removeChild(overlay.lastChild);
             overlay.appendChild(createInfoPage(chapterIndex - 1));
             overlay.style.display = "flex";
-            overlay.style.left = rawScroll.toString() + "px";
+            overlay.style.left = rawScrollLeft.toString() + "px";
             chapterIndex--;
             for (let i = 0; i < pagesDiv.children.length; i++) {
                 let item = pagesDiv.children.item(i);
@@ -105,12 +195,21 @@ import List from "$lib/List.svelte";
                 }
             }
             await loadChapters(direction);
-            pagesDiv.appendChild(createInfoPage(chapterIndex - 1))
-            for (let item of nextChapterPages) {
-                pagesDiv.appendChild(createPage(item, chapterIndex - 1));
+            if (readingMode === ReadingMode.rtl) {
+                pagesDiv.insertBefore(createInfoPage(chapterIndex - 1), pagesDiv.firstChild);
+                for (let item of nextChapterPages.reverse()) {
+                    pagesDiv.insertBefore(createPage(item, chapterIndex - 1), pagesDiv.firstChild);
+                }
+                ignoreNextScroll = true;
+                pagesDiv.scrollTo({ left: (nextChapterPages.length + chapterPages.length + 1) * pagesWidth * dpr });
+            } else {
+                pagesDiv.appendChild(createInfoPage(chapterIndex - 1))
+                for (let item of nextChapterPages) {
+                    pagesDiv.appendChild(createPage(item, chapterIndex - 1));
+                }
+                ignoreNextScroll = true;
+                pagesDiv.scrollTo({ left: (previousChapterPages.length) * pagesWidth * dpr });
             }
-            ignoreNextScroll = true;
-            pagesDiv.scrollTo({ left: (previousChapterPages.length) * pagesWidth * dpr });
             pageNum = 0;
             await goto($page.url.toString().replace(/\/read\/([^/]*)/, `/read/${chapters[chapterIndex].id}`), { noscroll: true });
         } else if (direction === Direction.reverse) {
@@ -120,7 +219,7 @@ import List from "$lib/List.svelte";
             if (overlay.children.length > 1) overlay.removeChild(overlay.lastChild);
             overlay.appendChild(createInfoPage(chapterIndex));
             overlay.style.display = "flex";
-            overlay.style.left = rawScroll.toString() + "px";
+            overlay.style.left = rawScrollLeft.toString() + "px";
             chapterIndex++;
             for (let i = 0; i < pagesDiv.children.length; i++) {
                 let item = pagesDiv.children.item(i);
@@ -130,12 +229,21 @@ import List from "$lib/List.svelte";
                 }
             }
             await loadChapters(direction);
-            pagesDiv.insertBefore(createInfoPage(chapterIndex), pagesDiv.firstChild);
-            for (let item of previousChapterPages.reverse()) {
-                pagesDiv.insertBefore(createPage(item, chapterIndex + 1), pagesDiv.firstChild);
+            if (readingMode === ReadingMode.rtl) {
+                pagesDiv.appendChild(createInfoPage(chapterIndex));
+                for (let item of previousChapterPages) {
+                    pagesDiv.appendChild(createPage(item, chapterIndex + 1));
+                }
+                ignoreNextScroll = true;
+                pagesDiv.scrollTo({ left: (nextChapterPages.length) * pagesWidth * dpr });
+            } else {
+                pagesDiv.insertBefore(createInfoPage(chapterIndex), pagesDiv.firstChild);
+                for (let item of previousChapterPages.reverse()) {
+                    pagesDiv.insertBefore(createPage(item, chapterIndex + 1), pagesDiv.firstChild);
+                }
+                ignoreNextScroll = true;
+                pagesDiv.scrollTo({ left: (previousChapterPages.length + chapterPages.length + 1) * pagesWidth * dpr });
             }
-            ignoreNextScroll = true;
-            pagesDiv.scrollTo({ left: (previousChapterPages.length + chapterPages.length + 1) * pagesWidth * dpr });
             pageNum = chapterPages.length + 1;
             await goto($page.url.toString().replace(/\/read\/([^/]*)/, `/read/${chapters[chapterIndex].id}`), { noscroll: true });
         }
@@ -184,7 +292,11 @@ import List from "$lib/List.svelte";
 
     function scrollToPage() {
         ignoreNextScroll = true;
-        pagesDiv.scrollTo({ left: (previousChapterPages.length + pageNum) * pagesWidth * dpr });
+        if (readingMode === ReadingMode.rtl) {
+            pagesDiv.scrollTo({ left: (nextChapterPages.length + chapterPages.length + 1 - pageNum) * pagesWidth * dpr });
+        } else {
+            pagesDiv.scrollTo({ left: (previousChapterPages.length + pageNum) * pagesWidth * dpr });
+        }
     }
 
     onMount(init);
@@ -216,7 +328,10 @@ import List from "$lib/List.svelte";
             <i class="f7-icons reader-controls-glyph" on:click={() => {settingsOpen = true}}>gear</i>
         </div>
         <div class="reader-pages" bind:this={pagesDiv} on:scroll={() => { 
-                if (!ignoreNextScroll) rawScroll = pagesDiv.scrollLeft;
+                if (!ignoreNextScroll) {
+                    rawScrollLeft = pagesDiv.scrollLeft;
+                    rawScrollTop = pagesDiv.scrollTop;
+                }
                 else ignoreNextScroll = false;
             }} bind:clientWidth={rawPagesWidth}>
             <div class="reader-overlay" bind:this={overlay}>
@@ -249,7 +364,14 @@ import List from "$lib/List.svelte";
     </div>
     <div class="settings" class:hidden={!settingsOpen}>
         <List title="Settings" exiting={true} on:click={() => settingsOpen = false}>
-
+            <div class="settings-item">
+                <span class="settings-item-title">Reading Mode</span>
+                <Dropdown title={readingMode.toString()}>
+                    {#each Object.values(ReadingMode) as mode}
+                        <span class="settings-dropdown-item" on:click={() => readingMode = mode}>{mode.toString()}</span>
+                    {/each}
+                </Dropdown>
+            </div>
         </List>
     </div>
 </div>
@@ -377,6 +499,36 @@ import List from "$lib/List.svelte";
         top: 0;
         left: 0;
         right: 0;
+        font-weight: bold;
+        &-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem;
+            background-color: $background-color-light;
+            &:hover {
+                background-color: $hover-color-light;
+            }
+            @media (prefers-color-scheme: dark) {
+                background-color: $background-color-dark;
+                &:hover {
+                    background-color: $hover-color-dark;
+                }
+            }
+        }
+        &-dropdown-item {
+            padding: 0.5rem;
+            background-color: $background-color-light;
+            &:hover {
+                background-color: $hover-color-light;
+            }
+            @media (prefers-color-scheme: dark) {
+                background-color: $background-color-dark;
+                &:hover {
+                    background-color: $hover-color-dark;
+                }
+            }
+        }
     }
     .hidden {
         display: none;

@@ -1,8 +1,6 @@
 <script lang=ts>
     import { page } from "$app/stores"
     import { user } from "$lib/stores"
-import { loop_guard } from "svelte/internal";
-    import Skeleton from "./Skeleton.svelte";
     let dropdownContent: HTMLElement;
     let dropdownToggle: HTMLElement;
     let dropped = false;
