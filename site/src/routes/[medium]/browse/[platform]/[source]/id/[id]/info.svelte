@@ -4,6 +4,9 @@
     import manifest from "$lib/manifest";
     import * as Sources from "$lib/sources"
     import type * as MangaSource from "soshiki-packages/manga/mangaSource";
+    import LoadingBar from "$lib/LoadingBar.svelte";
+    import List from "$lib/List.svelte";
+    import { DateTime } from "luxon";
     let medium = $page.params.medium;
     let sourceId = $page.params.source;
     let platform = $page.params.platform;
@@ -68,11 +71,51 @@
             </div>
             <span class="info-body-content-description">{ info.description || "" }</span>
         </div>
+        <div class="info-chapters">
+            <List title="Chapters" subtitle={`${chapters.length}`}> 
+                {#each chapters as chapter}
+                    <a class="chapter-list-item" href="./read/{chapter.id}">
+                        <span class="chapter-list-item-title">{(chapter.volume !== null && typeof chapter.volume !== "undefined") ? `Volume ${chapter.volume} ` : ""}Chapter {chapter.chapter} {chapter.title ? `- ${chapter.title}` : ""}</span>
+                        <span class="chapter-list-item-subtitle">{chapter.scanlator ? `${chapter.scanlator} ${chapter.date ? "- " : ""}` : ""}{chapter.date ? `Released ${DateTime.fromJSDate(chapter.date).toRelative()}` : ""}</span>
+                    </a>
+                {/each}
+            </List>
+        </div>
     </div>
+{:else}
+    <LoadingBar />
 {/if}
 
 <style lang="scss">
     @use "../../../../../../../styles/global.scss" as *;
+    .chapter-list-item {
+        padding: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        font-weight: bold;
+        gap: 0.25rem;
+        cursor: pointer;
+        &:hover {
+            background-color: $hover-color-light;
+            @media (prefers-color-scheme: dark) {
+                background-color: $hover-color-dark;
+            }
+        }
+        &-title {
+            font-size: 1rem;
+            overflow: hidden;
+        }
+        &-subtitle {
+            font-size: 0.8rem;
+            overflow: hidden;
+            color: $accent-text-color-light;
+            @media (prefers-color-scheme: dark) {
+                color: $accent-text-color-dark;
+            }
+        }
+    }
     .info-header {
         position: relative;
         display: flex;
@@ -162,7 +205,7 @@
         justify-content: center;
         align-items: center;
         gap: 1rem;
-        margin-top: 1.5rem;
+        margin: 1.5rem 0;
         &-description {
             font-size: 1rem;
             font-weight: 600;

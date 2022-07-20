@@ -27,10 +27,11 @@ const whitelistedPaths = [
     '/user/connect/mal',
     '/user/connect/anilist',
 ];
-const corsWhitelistedMethods = [];
+const corsWhitelistedMethods = ['GET', 'OPTIONS'];
 const unverifiedMethods = ['GET', 'OPTIONS'];
 const connections = ['mal', 'anilist'];
 
+const developmentMode = true;
 
 let database: Database;
 
@@ -39,10 +40,11 @@ const isMedium = (medium: string): medium is Medium => {
 }
 
 const cors = (req: any, res: any, next: any) => {
-    if(corsWhitelistedMethods.includes(req.method) || whitelistedPaths.includes(req.path)) {
+    if(corsWhitelistedMethods.includes(req.method) || whitelistedPaths.includes(req.path) || developmentMode) {
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
         res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
         next();
         return;
     }
@@ -103,12 +105,12 @@ app.get("/link/:medium/:platform/:source/:id", async (req, res) => {
     res.send({id: entry});
 });
 
-app.post("/link/:medium/:platform/:source/:id", async (req, res) => {
+app.post("/link/:medium/:platform/:source/:id/:soshikiId", async (req, res) => {
     const medium = req.params.medium;
     const platform = req.params.platform;
     const source = req.params.source;
     const id = req.params.id;
-    const soshikiId = req.query.id as string;
+    const soshikiId = req.params.soshikiId;
     if(!isMedium(medium) || !soshikiId) {
         res.status(400).send();
         return;
@@ -118,7 +120,8 @@ app.post("/link/:medium/:platform/:source/:id", async (req, res) => {
         res.status(401).send();
         return;
     }
-    await database.setLink(medium, platform, source, id, soshikiId);
+    let user = await database.getUserId(token);
+    await database.setLink(medium, platform, source, id, user, soshikiId);
     res.send();
 });
 
@@ -145,12 +148,26 @@ app.get("/info/:medium/:id", async (req, res) => {
                         if(malEntry) {
                             entry.info.mal = malEntry;
                             await database.setInfoProperty(req.params.medium as Medium, req.params.id, 'mal', malEntry);
+                        } else {
+                            await refreshMAL(userId);
+                            let malEntry = await MAL.getAnime(entry.tracker_ids.mal, mal.access);
+                            if(malEntry) {
+                                entry.info.mal = malEntry;
+                                await database.setInfoProperty(req.params.medium as Medium, req.params.id, 'mal', malEntry);
+                            }
                         }
                     } else {
                         let malEntry = await MAL.getManga(entry.tracker_ids.mal, mal.access);
                         if(malEntry) {
                             entry.info.mal = malEntry;
                             await database.setInfoProperty(req.params.medium as Medium, req.params.id, 'mal', malEntry);
+                        } else {
+                            await refreshMAL(userId);
+                            let malEntry = await MAL.getManga(entry.tracker_ids.mal, mal.access);
+                            if(malEntry) {
+                                entry.info.mal = malEntry;
+                                await database.setInfoProperty(req.params.medium as Medium, req.params.id, 'mal', malEntry);
+                            }
                         }
                     }
                 }
@@ -197,7 +214,7 @@ app.get('/user/login/discord', async (req, res) => {
     let expires = json.expires_in;
     let user = await fetch(`${manifest.discord.url}/users/@me`, { headers: { Authorization: `Bearer ${daccess}` } }).then(res => res.json());
     let {id, access, refresh} = await database.login(user.id, daccess, drefresh, expires);
-    res.redirect(`${manifest.site.url}/account/redirect?type=discord&id=${id}&access=${access}&refresh=${refresh}&expires=${expires}`);
+    res.redirect(`${manifest.site.url}/account/redirect?type=discord&id=${id}&access=${access}&refresh=${refresh}&expires=${expires * 1000}`);
 });
 
 app.get('/user/login/discord/refresh', async (req, res) => {
@@ -347,24 +364,29 @@ app.get("/user/connect/:type/refresh", async (req, res) => {
         return;
     }
     if(type === "mal") {
-        let user = await database.getUser(userId);
-        let res = await fetch("https://myanimelist.net/v1/oauth2/token", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: `grant_type=refresh_token&refresh_token=${user.connections.mal.refresh}&redirect_uri=https%3A%2F%2Fapi.soshiki.moe%2Fuser%2Fconnect%2Fmal&client_id=${manifest.mal.id}&client_secret=${manifest.mal.secret}`
-        });
-        let json = await res.json();
-        let access = json.access_token;
-        let refresh = json.refresh_token;
-        let expires = json.expires_in;
-        await database.setUserConnection(user.id, type, {
-            access,
-            refresh,
-            expires: Date.now() + expires * 1000
-        });
+        refreshMAL(userId);
     }
+});
+
+app.delete("/user/connect/:type", async (req, res) => {
+    let type = req.params.type;
+    if(!connections.includes(type)) {
+        res.status(400).send("Invalid connection type");
+        return;
+    }
+    let token = getToken(req);
+    if(!token) {
+        res.status(401).send();
+        return;
+    }
+    let userId = await database.getUserId(token);
+    if(!userId) {
+        res.status(401).send();
+        return;
+    }
+    await database.deleteUserConnection(userId, type);
+    await database.deleteUserData(userId, type);
+    res.send();
 });
 
 app.get("/user/:id", async (req, res) => {
@@ -421,3 +443,23 @@ app.listen(manifest.api.port, async () => {
     database = await Database.connect();
     console.log(`Server started on port ${manifest.api.port}`);
 });
+
+async function refreshMAL(userId: string) {
+    let user = await database.getUser(userId);
+    let res = await fetch("https://myanimelist.net/v1/oauth2/token", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `grant_type=refresh_token&refresh_token=${user.connections.mal.refresh}&redirect_uri=https%3A%2F%2Fapi.soshiki.moe%2Fuser%2Fconnect%2Fmal&client_id=${manifest.mal.id}&client_secret=${manifest.mal.secret}`
+    });
+    let json = await res.json();
+    let access = json.access_token;
+    let refresh = json.refresh_token;
+    let expires = json.expires_in;
+    await database.setUserConnection(user.id, "mal", {
+        access,
+        refresh,
+        expires: Date.now() + expires * 1000
+    });
+}

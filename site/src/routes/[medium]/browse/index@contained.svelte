@@ -5,11 +5,11 @@
     import * as Sources from "$lib/sources"
     import type { Medium } from "soshiki-types";
     import type { SourceType } from "soshiki-packages/source";
-import { goto } from "$app/navigation";
+    import { goto } from "$app/navigation";
+    import List from "$lib/List.svelte";
+    import LoadingBar from "$lib/LoadingBar.svelte";
     let installedSources: {[key: string]: any} = {};
-    let installedSourcesState: {[key: string]: boolean} = {};
     let externalSources: {[key: string]: any} = {};
-    let externalSourcesState: {[key: string]: boolean} = {};
     let mounted = false;
     onMount(async () => {
         let soshikiJson = JSON.parse(localStorage.getItem("soshiki") || "{}");
@@ -26,9 +26,6 @@ import { goto } from "$app/navigation";
             case "novel":
                 installedSources = installedNovelSources;
                 break;
-        }
-        for(let platform of Object.keys(installedSources)) {
-            installedSourcesState[platform] = false;
         }
         let fullExternalSources = await fetch("/source-lists").then(res => res.json());
         let externalAnimeSources = fullExternalSources.anime;
@@ -61,9 +58,6 @@ import { goto } from "$app/navigation";
                     break;
             }
         }
-        for(let platform of Object.keys(externalSources)) {
-            externalSourcesState[platform] = false;
-        }
         mounted = true;
     })
 
@@ -88,58 +82,46 @@ import { goto } from "$app/navigation";
 {#if mounted}
     <div class="browse">
         <span class="browse-heading">Installed Sources</span>
-        <div class="dropdown-list">
+        <div class="list-list">
             {#each Object.keys(installedSources) || [] as platform}
-                <div class="dropdown-list-section">
-                    <div class="dropdown-list-section-header" class:dropdown-list-section-header-dropped={installedSourcesState[platform]}>
-                        <span class="dropdown-list-section-title">{platform.charAt(0).toUpperCase() + platform.slice(1)}</span>
-                        <div class="dropdown-list-section-column">
-                            <span class="dropdown-list-section-title">{installedSources[platform].length}</span>
-                            <i class="f7-icons dropdown-list-section-glyph" on:click={() => {installedSourcesState[platform] = !installedSourcesState[platform]}}>{installedSourcesState[platform] ? "chevron_up" : "chevron_down"}</i>
-                        </div>
-                    </div>
-                    <div class="dropdown-list-section-content" class:dropdown-list-section-content-hidden={!installedSourcesState[platform]}>
-                        {#each installedSources[platform] as source}
-                            <div class="dropdown-list-section-content-item" data-platform={platform} data-id={source.id} on:click={(e) => sourceSelected(e)}>
-                                <div class="dropdown-list-section-content-item-column">
-                                    <img class="dropdown-list-section-content-item-image" src={source.image} alt={source.name}>
-                                    <span class="dropdown-list-section-content-item-title">{source.name}</span>
-                                    <span class="dropdown-list-section-content-item-subtitle">v{source.version}</span>
-                                </div>
-                                <span class="dropdown-list-section-content-item-button" on:click={async () => await removeSource(platform, source)}>Remove</span>
+                <List title={platform.charAt(0).toUpperCase() + platform.slice(1)} subtitle={installedSources[platform].length} collapsing={true}>
+                    {#each installedSources[platform] as source}
+                        <div class="list-item" data-platform={platform} data-id={source.id} on:click={(e) => sourceSelected(e)}>
+                            <div class="list-item-column">
+                                <img class="list-item-image" src={source.image} alt={source.name}>
+                                <span class="list-item-title">{source.name}</span>
+                                <span class="list-item-subtitle">v{source.version}</span>
                             </div>
-                        {/each}
-                    </div>
-                </div>
+                            <span class="list-item-button" on:click={async () => await removeSource(platform, source)}>Remove</span>
+                        </div>
+                    {/each}
+                </List>
+            {:else}
+                <span class="subtitle">None found.</span>
             {/each}
         </div>
         <span class="browse-heading">Available Sources</span>
-        <div class="dropdown-list">
+        <div class="list-list">
             {#each Object.keys(externalSources) || [] as platform}
-                <div class="dropdown-list-section">
-                    <div class="dropdown-list-section-header" class:dropdown-list-section-header-dropped={externalSourcesState[platform]}>
-                        <span class="dropdown-list-section-title">{platform.charAt(0).toUpperCase() + platform.slice(1)}</span>
-                        <div class="dropdown-list-section-column">
-                            <span class="dropdown-list-section-title">{externalSources[platform].length}</span>
-                            <i class="f7-icons dropdown-list-section-glyph" on:click={() => {externalSourcesState[platform] = !externalSourcesState[platform]}}>{externalSourcesState[platform] ? "chevron_up" : "chevron_down"}</i>
-                        </div>
-                    </div>
-                    <div class="dropdown-list-section-content" class:dropdown-list-section-content-hidden={!externalSourcesState[platform]}>
-                        {#each externalSources[platform] as source}
-                            <div class="dropdown-list-section-content-item">
-                                <div class="dropdown-list-section-content-item-column">
-                                    <img class="dropdown-list-section-content-item-image" src={source.image} alt={source.name}>
-                                    <span class="dropdown-list-section-content-item-title">{source.name}</span>
-                                    <span class="dropdown-list-section-content-item-subtitle">v{source.version}</span>
-                                </div>
-                                <span class="dropdown-list-section-content-item-button" on:click={async () => await installSource(platform, source)}>Install</span>
+                <List title={platform.charAt(0).toUpperCase() + platform.slice(1)} subtitle={externalSources[platform].length} collapsing={true}>
+                    {#each externalSources[platform] as source}
+                        <div class="list-item">
+                            <div class="list-item-column">
+                                <img class="list-item-image" src={source.image} alt={source.name}>
+                                <span class="list-item-title">{source.name}</span>
+                                <span class="list-item-subtitle">v{source.version}</span>
                             </div>
-                        {/each}
-                    </div>
-                </div>
+                            <span class="list-item-button" on:click={async () => await installSource(platform, source)}>Install</span>
+                        </div>
+                    {/each}
+                </List>
+            {:else}
+                <span class="subtitle">None found.</span>
             {/each}
         </div>
     </div>
+{:else}
+    <LoadingBar />
 {/if}
 
 <style lang=scss>
@@ -159,104 +141,73 @@ import { goto } from "$app/navigation";
             margin-bottom: 1rem;
         }
     }
-    .dropdown-list {
-        display: flex;
-        flex-direction: column;
-        &-section {
-            border-radius: 0.5rem;
-            border: 3px solid $accent-background-color-light;
-            @media (prefers-color-scheme: dark) {
-                border-color: $accent-background-color-dark;
-            }
-
-            &-header {
-                display: flex;
-                justify-content: space-between;
-                background-color: $accent-background-color-light;
-                font-size: 1.25rem;
-                font-weight: bold;
-                padding: 0.5rem;
-                border-radius: 0.25rem;
+    .list {
+        &-list {
+            display: flex;
+            flex-direction: column;
+        }
+        &-item {
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            &:hover {
+                background-color: $hover-color-light;
                 @media (prefers-color-scheme: dark) {
-                    background-color: $accent-background-color-dark;
-                }
-                &-dropped {
-                    border-radius: 0.25rem 0.25rem 0 0;
+                    background-color: $hover-color-dark;
                 }
             }
             &-column {
-                        display: flex;
-                        align-items: center;
-                        justify-content: flex-start;
-                        gap: 0.5rem;
-                    }
-            &-content {
                 display: flex;
-                flex-direction: column;
-                &-hidden {
-                    display: none;
+                align-items: center;
+                justify-content: flex-start;
+                gap: 0.5rem;
+            }
+            &-title {
+                font-size: 1.25rem;
+                font-weight: bold;
+            }
+            &-subtitle {
+                font-size: 1rem;
+                font-weight: bold;
+                color: $accent-text-color-light;
+                @media (prefers-color-scheme: dark) {
+                    color: $accent-text-color-dark;
                 }
-                &-item {
-                    padding: 0.5rem;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    &:not(:last-child) {
-                        border-bottom: 3px solid $accent-background-color-light;
-                        @media (prefers-color-scheme: dark) {
-                            border-bottom-color: $accent-background-color-dark;
-                        }
-                    }
-                    &:hover {
-                        background-color: $hover-color-light;
-                        @media (prefers-color-scheme: dark) {
-                            background-color: $hover-color-dark;
-                        }
-                    }
-                    &-column {
-                        display: flex;
-                        align-items: center;
-                        justify-content: flex-start;
-                        gap: 0.5rem;
-                    }
-                    &-title {
-                        font-size: 1.25rem;
-                        font-weight: bold;
-                    }
-                    &-subtitle {
-                        font-size: 1rem;
-                        font-weight: bold;
-                        color: $accent-text-color-light;
-                        @media (prefers-color-scheme: dark) {
-                            color: $accent-text-color-dark;
-                        }
-                    }
-                    &-image {
-                        width: 2rem;
-                        height: 2rem;
-                        border-radius: 25%;
-                        margin-right: 0.5rem;
-                    }
-                    &-button {
-                        font-size: 1rem;
-                        font-weight: bold;
-                        color: $accent-text-color-light;
-                        border-radius: 0.5rem;
-                        padding: 0.25rem 0.5rem;
-                        user-select: none;
-                        cursor: pointer;
-                        @media (prefers-color-scheme: dark) {
-                            color: $accent-text-color-dark;
-                        }
-                        &:hover {
-                            background-color: $accent-background-color-light;
-                            @media (prefers-color-scheme: dark) {
-                                background-color: $accent-background-color-dark;
-                            }
-                        }
+            }
+            &-image {
+                width: 2rem;
+                height: 2rem;
+                border-radius: 25%;
+                margin-right: 0.5rem;
+            }
+            &-button {
+                font-size: 1rem;
+                font-weight: bold;
+                color: $accent-text-color-light;
+                border-radius: 0.5rem;
+                padding: 0.25rem 0.5rem;
+                user-select: none;
+                cursor: pointer;
+                @media (prefers-color-scheme: dark) {
+                    color: $accent-text-color-dark;
+                }
+                &:hover {
+                    background-color: $accent-background-color-light;
+                    @media (prefers-color-scheme: dark) {
+                        background-color: $accent-background-color-dark;
                     }
                 }
             }
+        }
+    }
+    .subtitle {
+        margin: 0.5rem 0 2rem;
+        font-size: 1rem;
+        font-weight: bold;
+        color: $accent-text-color-light;
+        @media (prefers-color-scheme: dark) {
+            color: $accent-text-color-dark;
         }
     }
 </style>

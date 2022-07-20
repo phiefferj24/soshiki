@@ -6,6 +6,7 @@
     import { user } from '$lib/stores';
     import Cookie from 'js-cookie';
     import { goto } from '$app/navigation';
+    import LoadingBar from '$lib/LoadingBar.svelte';
     let mounted = false;
     async function init() {
         let access = Cookie.get("access");
@@ -40,6 +41,8 @@
 {#if mounted}
     <Header />
     <slot />
+{:else}
+    <LoadingBar />
 {/if}
 
 <style lang="scss" global>

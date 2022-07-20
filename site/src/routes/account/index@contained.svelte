@@ -1,7 +1,10 @@
 <script lang="ts">
     import { user } from "$lib/stores";
-    import { page } from "$app/stores";
+    import { goto } from "$app/navigation";
     import Cookie from 'js-cookie';
+    import List from "$lib/List.svelte";
+    import manifest from "$lib/manifest";
+import LoadingBar from "$lib/LoadingBar.svelte";
     let mounted = false;
     let username: string;
     let mal: any;
@@ -30,63 +33,104 @@
 
 {#if mounted}
     <h1>Account Info for {username}</h1>
-    <div class="account-section">
-        <div class="account-section-header">
-            <span>Connections</span>
-        </div>
-        <div class="account-section-item">
-            <span>MyAnimeList</span>
-            <div>
-                {#if mal}
-                    <span>Connected - {mal.name}</span>
-                {:else}
-                    <span>Not Connected</span>
-                    <a href="{"https://api.soshiki.moe/user/connect/mal/redirect?token=" + Cookie.get("access")}">Connect</a>
-                {/if}
+    <List title="Connections" collapsing={true}>
+        <div class="list-item">
+            <div class="list-item-row">
+                <img class="list-item-image" src={mal?.picture || ""} alt={mal?.name || ""}>
+                <div class="list-item-column">
+                    <a class="list-item-title" href={mal ? `https://myanimelist.net/profile/${mal.name}` : ""}>MyAnimeList</a>
+                    <span class="list-item-subtitle">Logged in as {mal?.name || ""}</span>
+                </div>
             </div>
+            <span class="list-item-button" on:click={async () => {
+                if (mal) {
+                    await fetch(`${manifest.api.url}/user/connect/mal`, {
+                        method: "DELETE",
+                        headers: { "Authorization": `Bearer ${Cookie.get("access")}` }
+                    });
+                    mal = null;
+                } else {
+                    await goto(`${manifest.api.url}/user/connect/mal/redirect?access=${Cookie.get("access")}}`);
+                }
+            }}>{mal ? "Disconnect" : "Connect"}</span>
         </div>
-        <div class="account-section-item">
-            <span>AniList</span>
-            <div>
-                {#if anilist}
-                    <span>Connected - {anilist.name}</span>
-                {:else}
-                    <span>Not Connected</span>
-                    <a href="{"https://api.soshiki.moe/user/connect/anilist/redirect?token=" + Cookie.get("access")}">Connect</a>
-                {/if}
+        <div class="list-item">
+            <div class="list-item-row">
+                <img class="list-item-image" src={anilist?.avatar?.large || anilist?.avatar?.medium || ""} alt={anilist?.name || ""}>
+                <div class="list-item-column">
+                    <a class="list-item-title" href={anilist ? `https://anilist.co/user/${anilist.name}` : ""}>AniList</a>
+                    <span class="list-item-subtitle">Logged in as {anilist?.name || ""}</span>
+                </div>
             </div>
-        </div>
-    </div>
+            <span class="list-item-button" on:click={async () => {
+                if (anilist) {
+                    await fetch(`${manifest.api.url}/user/connect/anilist`, {
+                        method: "DELETE",
+                        headers: { "Authorization": `Bearer ${Cookie.get("access")}` }
+                    });
+                    anilist = null;
+                } else {
+                    await goto(`${manifest.api.url}/user/connect/anilist/redirect?access=${Cookie.get("access")}`);
+                }
+            }}>{anilist ? "Disconnect" : "Connect"}</span>
+    </List>
+{:else}
+    <LoadingBar />
 {/if}
 
 <style lang="scss">
     @use "../../styles/global.scss" as *;
-    .account-section {
-        border-radius: 0.5rem;
-        border: 3px solid $accent-background-color-light;
-        @media (prefers-color-scheme: dark) {
-            border-color: $accent-background-color-dark;
+    .list-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem;
+        &-column {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 0.25rem;
         }
-
-        &-header {
-            background-color: $accent-background-color-light;
-            font-size: 1.25rem;
+        &-row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 1rem;
+        }
+        &-title {
+            font-size: 1rem;
             font-weight: bold;
-            padding: 0.5rem;
-            border-radius: 0.25rem 0.25rem 0 0;
+        }
+        &-subtitle {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: $accent-text-color-light;
             @media (prefers-color-scheme: dark) {
-                background-color: $accent-background-color-dark;
+                color: $accent-text-color-dark;
             }
         }
-        &-item {
-            padding: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            &:not(:last-child) {
-                border-bottom: 3px solid $accent-background-color-light;
+        &-image {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 25%;
+        }
+        &-button {
+            font-size: 1rem;
+            font-weight: bold;
+            color: $accent-text-color-light;
+            border-radius: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            user-select: none;
+            cursor: pointer;
+            @media (prefers-color-scheme: dark) {
+                color: $accent-text-color-dark;
+            }
+            &:hover {
+                background-color: $accent-background-color-light;
                 @media (prefers-color-scheme: dark) {
-                    border-bottom-color: $accent-background-color-dark;
+                    background-color: $accent-background-color-dark;
                 }
             }
         }
