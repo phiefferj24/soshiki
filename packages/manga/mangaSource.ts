@@ -1,14 +1,16 @@
-import type { Json } from 'soshiki-types';
-import type { Source, Filter } from '../source';
+import type { Source, Filter, Listing } from '../source';
 
-import { AidokuSource } from './aidoku-ts/aidokuSource';
+import AidokuSource from './aidoku-ts/aidokuSource';
+import PaperbackSource from './paperback/paperbackSource'
 
 export enum MangaSourceType {
     aidoku = 'aidoku',
+    paperback = 'paperback'
 }
 
 let mangaSourceClasses = {
     aidoku: AidokuSource,
+    paperback: PaperbackSource
 }
 
 export interface MangaSource extends Source {
@@ -21,11 +23,13 @@ export interface MangaSource extends Source {
 
     init(json: any, url: string): Promise<void>;
     getFilters(): Promise<Filter[]>;
+    getListings(): Promise<Listing[]>;
     getMangaList(filters: Filter[], page: number): Promise<MangaPageResult>;
-    getMangaListing(name: string, page: number): Promise<MangaPageResult>;
+    getMangaListing(listing: Listing, page: number): Promise<MangaPageResult>;
     getMangaDetails(id: string): Promise<Manga>;
     getMangaChapters(id: string): Promise<MangaChapter[]>;
     getMangaChapterPages(id: string, chapterId: string): Promise<MangaPage[]>;
+    modifyImageRequest(request: Request): Promise<Request>;
 }
 
 export type ExternalMangaSource = {
@@ -38,8 +42,8 @@ export type ExternalMangaSource = {
     listUrl: string;
 }
 
-export function parseSourceList(type: MangaSourceType, data: any, url: string): ExternalMangaSource[] {
-    let sources = mangaSourceClasses[type].parseSourceList(data, url);
+export async function parseSourceList(type: MangaSourceType, url: string): Promise<ExternalMangaSource[]> {
+    let sources = await mangaSourceClasses[type].parseSourceList(url);
     return sources;
 }
 

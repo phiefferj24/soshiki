@@ -16,15 +16,18 @@ export let sources = {
     manga: {} as {[key: string]: MangaSource[]},
     novel: {} as {[key: string]: Source[]},
     anime: {} as {[key: string]: Source[]},
-}
-for(let medium of ['manga', 'novel', 'anime']) {
-    for(let platform of Object.keys(installedSources[medium])) {
-        for(let source of installedSources[medium][platform]) {
-            const sourceObject = await install(medium as Medium, platform as SourceType, source, source.listUrl);
-            if(!sources[medium][platform]) {
-                sources[medium][platform] = [];
+};
+
+export async function init() {
+    for(let medium of ['manga', 'novel', 'anime']) {
+        for(let platform of Object.keys(installedSources[medium])) {
+            for(let source of installedSources[medium][platform]) {
+                const sourceObject = await install(medium as Medium, platform as SourceType, source, source.listUrl);
+                if(!sources[medium][platform]) {
+                    sources[medium][platform] = [];
+                }
+                sources[medium][platform] = [...sources[medium][platform], sourceObject];
             }
-            sources[medium][platform] = [...sources[medium][platform], sourceObject];
         }
     }
 }

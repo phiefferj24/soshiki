@@ -16,15 +16,15 @@
     let chapters: MangaSource.MangaChapter[];
     let link: string | null;
     async function init() {
-        info = await source.getMangaDetails($page.params.id);
-        chapters = await source.getMangaChapters($page.params.id);
+        info = await source.getMangaDetails(decodeURIComponent($page.params.id));
+        chapters = await source.getMangaChapters(decodeURIComponent($page.params.id)).then(chapters => chapters.filter((chapter, index) => chapters.findIndex(c => chapter.chapter === c.chapter) === index));
         await updateLink();
         mounted = true;
     }
     onMount(init);
     let headerTextHeight = 0;
     async function updateLink() {
-        let res = await fetch(`${manifest.api.url}/link/${medium}/${platform}/${sourceId}/${$page.params.id}`);
+        let res = await fetch(`${manifest.api.url}/link/${medium}/${platform}/${sourceId}/${encodeURIComponent($page.params.id)}`);
         let json = await res.json();
         if (!json || !json.id || json.id.length === 0) {
             link = null;
@@ -42,13 +42,16 @@
 </svelte:head>
 
 {#if mounted}
-    <div class="info-header" style:--banner="url({manifest.proxy.url}/{info.cover || ""})">
-        <div class="info-header-gradient"></div>
-    </div>
+    {#await source.modifyImageRequest(new Request(`${manifest.proxy.url}/${info.cover}` || "")).then(req => fetch(req)).then(res => res.blob()).then(blob => URL.createObjectURL(blob)) then url}
+        <div class="info-header" style:--banner="url({manifest.proxy.url}/{info.cover || ""})">
+            <div class="info-header-gradient"></div>
+        </div>
+    {/await}
     <div class="container" style:--height="{headerTextHeight}px">
         <div class="info-header-content">
-            <div class="info-header-cover" style:--cover="url({manifest.proxy.url}/{info.cover || ""})">
-            </div>
+            {#await source.modifyImageRequest(new Request(`${manifest.proxy.url}/${info.cover}` || "")).then(req => fetch(req)).then(res => res.blob()).then(blob => URL.createObjectURL(blob)) then url}
+                <div class="info-header-cover" style:--cover="url({url})"></div>
+            {/await}
             <div class="info-header-titles" bind:clientHeight={headerTextHeight}>
                 <span class="info-header-subtitle">{source.name} - {platform.charAt(0).toUpperCase() + platform.slice(1)}</span>
                 <span class="info-header-title">{info.title || ""}</span>
@@ -74,7 +77,7 @@
         <div class="info-chapters">
             <List title="Chapters" subtitle={`${chapters.length}`}> 
                 {#each chapters as chapter}
-                    <a class="chapter-list-item" href="./read/{chapter.id}">
+                    <a class="chapter-list-item" href="./read/{encodeURIComponent(chapter.id)}">
                         <span class="chapter-list-item-title">{(chapter.volume !== null && typeof chapter.volume !== "undefined") ? `Volume ${chapter.volume} ` : ""}Chapter {chapter.chapter} {chapter.title ? `- ${chapter.title}` : ""}</span>
                         <span class="chapter-list-item-subtitle">{chapter.scanlator ? `${chapter.scanlator} ${chapter.date ? "- " : ""}` : ""}{chapter.date ? `Released ${DateTime.fromJSDate(chapter.date).toRelative()}` : ""}</span>
                     </a>
@@ -128,9 +131,12 @@
         background-size: cover;
         background-repeat: no-repeat;
         &-titles {
+            width: 100%;
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
+            word-break: break-all;
+            hyphens: auto;
         }
         &-title {
             font-size: 2rem;
@@ -162,6 +168,11 @@
             align-items: flex-end;
             justify-content: flex-start;
             gap: 2rem;
+            @media only screen and (max-width: 640px) {
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+            }
         }
         &-cover {
             width: 10rem;
@@ -234,6 +245,8 @@
                 background-color: $accent-background-color-dark;
                 color: $accent-text-color-dark;
             }
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
     }
     .container {

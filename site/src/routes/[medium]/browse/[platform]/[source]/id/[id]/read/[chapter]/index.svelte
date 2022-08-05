@@ -7,6 +7,7 @@
     import Manga from "$lib/viewers/Manga.svelte";
     import LoadingBar from "$lib/LoadingBar.svelte";
 
+    let fullscreen = $page.url.searchParams.get("fullscreen") === "true";
     let mounted = false;
     let medium = $page.params.medium;
     let sourceId = $page.params.source;
@@ -22,8 +23,8 @@
 </script>
 
 {#if mounted}
-    <div class="container">
-        <Manga source={source} />
+    <div class:container={!fullscreen} class:fullscreen={fullscreen}>
+        <Manga source={source} bind:fullscreen/>
     </div>
 {:else}
     <LoadingBar />

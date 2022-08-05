@@ -19,7 +19,7 @@ import LoadingBar from "$lib/LoadingBar.svelte";
         let sourceId = $page.params.source;
         let platform = $page.params.platform;
         source = Sources.sources[medium][platform].find(s => s.id === sourceId) as MangaSource.MangaSource;
-        info = await source.getMangaDetails($page.params.id);
+        info = await source.getMangaDetails(decodeURIComponent($page.params.id));
         searchText = info.title;
         cachedSearchText = searchText;
         await getResults();
@@ -41,7 +41,7 @@ import LoadingBar from "$lib/LoadingBar.svelte";
             el = el.parentElement;
         }
         if(id) {
-            await fetch(`${manifest.api.url}/link/${$page.params.medium}/${$page.params.platform}/${$page.params.source}/${$page.params.id}/${id}`, {
+            await fetch(`${manifest.api.url}/link/${$page.params.medium}/${$page.params.platform}/${$page.params.source}/${encodeURIComponent($page.params.id)}/${id}`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${Cookie.get("access")}`
@@ -57,8 +57,10 @@ import LoadingBar from "$lib/LoadingBar.svelte";
 
 {#if mounted}
     <SearchBar bind:value={searchText} on:submit={getResults}/>
-    <h2>Search results for '{cachedSearchText}' - {results.length}
-    </h2>
+    <div class="heading">
+        <div class="heading-title">Results for '{cachedSearchText}'</div>
+        <div class="heading-count">{results.length}</div>
+    </div>
     {#if results.length > 0}
         <div class="results">
             {#each results as result}
@@ -83,6 +85,7 @@ import LoadingBar from "$lib/LoadingBar.svelte";
         display: flex;
         flex-direction: column;
         align-items: center;
+        margin-top: 2rem;
         justify-content: flex-start;
         border: 3px solid $accent-background-color-light;
         border-radius: 0.5rem;
@@ -97,6 +100,20 @@ import LoadingBar from "$lib/LoadingBar.svelte";
             border-bottom: 3px solid $accent-background-color-light;
             @media (prefers-color-scheme: dark) {
                 border-bottom: 3px solid $accent-background-color-dark;
+            }
+        }
+    }
+    .heading {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 2rem;
+        align-items: center;
+        font-size: 2rem;
+        font-weight: bolder;
+        &-count {
+            color: $accent-text-color-light;
+            @media (prefers-color-scheme: dark) {
+                color: $accent-text-color-dark;
             }
         }
     }

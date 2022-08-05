@@ -1,12 +1,12 @@
 import express from 'express';
 import Database from 'soshiki-database';
-import type { Medium } from 'soshiki-types';
+import { Medium, TrackerStatus } from 'soshiki-types';
 import manifest from 'soshiki-manifest';
 import dotenv from 'dotenv';
 import Discord from 'soshiki-discord';
 import crypto from 'crypto';
-import MAL from './mal';
-import AniList from './anilist';
+import MAL, * as MALTypes from './mal';
+import AniList, * as AniListTypes from './anilist';
 
 dotenv.config();
 
@@ -24,7 +24,9 @@ const whitelist = [
 const whitelistedPaths = [
     '/user/login/discord/redirect',
     '/user/login/discord',
+    '/user/connect/mal/redirect',
     '/user/connect/mal',
+    '/user/connect/anilist/redirect',
     '/user/connect/anilist',
 ];
 const corsWhitelistedMethods = ['GET', 'OPTIONS'];
@@ -55,6 +57,7 @@ const cors = (req: any, res: any, next: any) => {
     res.header('Access-Control-Allow-Origin', req.headers.origin);
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     next();
 }
 
@@ -91,6 +94,7 @@ function getToken(req: any) {
 
 app.use(cors);
 app.use(verify);
+app.use(express.json())
 
 app.get("/link/:medium/:platform/:source/:id", async (req, res) => {
     const medium = req.params.medium;
@@ -433,6 +437,197 @@ app.get("/user", async (req, res) => {
         return;
     }
     res.send(user);
+});
+
+app.get("/library/:medium", async (req, res) => {
+    let userId = await database.getUserId(getToken(req));
+    if(!userId) {
+        res.status(403).send("Unauthorized")
+    }
+    let json = await database.getUser(userId);
+    if (!json.data["library"]) json.data["library"] = {};
+    if (!json.data["library"][req.params.medium]) json.data["library"][req.params.medium] = [];
+    res.status(200).send(json.data["library"][req.params.medium]);
+});
+
+app.put("/library/:medium/:id", async (req, res) => {
+    if(!isMedium(req.params.medium)) res.status(400).send("Invalid medium");
+    let userId = await database.getUserId(getToken(req));
+    if(!userId) {
+        res.status(403).send("Unauthorized")
+    }
+    let json = await database.getUser(userId);
+    if (!json.data["library"]) json.data["library"] = {};
+    if (!json.data["library"][req.params.medium]) json.data["library"][req.params.medium] = [];
+    if (!json.data["library"][req.params.medium].includes(req.params.id)) json.data["library"][req.params.medium].push(req.params.id);
+    await database.setUserData(userId, "library", json.data["library"]);
+    res.status(200).send();
+});
+
+app.delete("/library/:medium/:id", async (req, res) => {
+    if(!isMedium(req.params.medium)) res.status(400).send("Invalid medium");
+    let userId = await database.getUserId(getToken(req));
+    if(!userId) {
+        res.status(403).send("Unauthorized")
+    }
+    let json = await database.getUser(userId);
+    if (!json.data["library"]) json.data["library"] = [];
+    if (!json.data["library"][req.params.medium]) json.data["library"][req.params.medium] = [];
+    if (!json.data["library"][req.params.medium].includes(req.params.id)) json.data["library"][req.params.medium].splice(json.data["library"][req.params.medium].indexOf(req.params.id), 1);
+    await database.setUserData(userId, "library", json.data["library"]);
+    res.status(200).send();
+});
+
+app.get("/history/:medium", async (req, res) => {
+    let userId = await database.getUserId(getToken(req));
+    if(!userId) {
+        res.status(403).send("Unauthorized")
+    }
+    let json = await database.getUser(userId);
+    if (!json.data["history"]) json.data["history"] = {};
+    if (!json.data["history"][req.params.medium]) json.data["history"][req.params.medium] = [];
+    res.status(200).send(json.data["history"][req.params.medium]);
+});
+
+app.get("/history/:medium/:id", async (req, res) => {
+    let userId = await database.getUserId(getToken(req));
+    if(!userId) {
+        res.status(403).send("Unauthorized")
+    }
+    let json = await database.getUser(userId);
+    if (!json.data["history"]) json.data["history"] = {};
+    if (!json.data["history"][req.params.medium]) json.data["history"][req.params.medium] = [];
+    res.status(200).send(json.data["history"][req.params.medium].find(entry => entry.id === req.params.id) ?? {});
+});
+
+app.post("/history/:medium/:id", async (req, res) => {
+    if(!isMedium(req.params.medium)) res.status(400).send("Invalid medium");
+    let userId = await database.getUserId(getToken(req));
+    if(!userId) {
+        res.status(403).send("Unauthorized")
+    }
+    let data = req.body;
+    let json = await database.getUser(userId);
+    if (!json.data["history"]) json.data["history"] = {};
+    if (!json.data["history"][req.params.medium]) json.data["history"][req.params.medium] = [];
+    let history = json.data["history"][req.params.medium];
+    let entryIndex = history.findIndex(item => item.id === req.params.id);
+    if (entryIndex === -1) {
+        let entry = {
+            id: req.params.id,
+            startTime: Date.now(),
+            page: data.page ?? 0,
+            status: data.status as TrackerStatus ?? TrackerStatus.ongoing,
+            lastReadTime: Date.now(),
+            rating: data.rating ?? 0,
+        }
+        if (req.params.medium === "anime") entry["episode"] = data.episode ?? 0;
+        else entry["chapter"] = data.chapter ?? 0;
+        history.push(entry);
+        entryIndex = history.length - 1;
+    } else {
+        let entry = history[entryIndex];
+        if (typeof data.chapter === "number") entry.chapter = data.chapter;
+        if (typeof data.page === "number") entry.page = data.page;
+        if (typeof data.rating === "number") entry.rating = data.rating;
+        entry.lastReadTime = Date.now();
+        history[entryIndex] = entry;
+    }
+    if (data.trackers) {
+        let user = await database.getUser(userId);
+        for (let tracker of data.trackers) {
+            if (tracker === "mal") {
+                let mal = user.connections.mal;
+                let status: MALTypes.MediaStatus;
+                if (data.status) {
+                    switch (data.status as TrackerStatus) {
+                        case TrackerStatus.completed: status = "completed"; break;
+                        case TrackerStatus.dropped: status = "dropped"; break;
+                        case TrackerStatus.ongoing: status = req.params.medium === "anime" ? "watching" : "reading"; break;
+                        case TrackerStatus.paused: status = "on_hold"; break;
+                        case TrackerStatus.planned: status = req.params.medium === "anime" ? "plan_to_watch" : "plan_to_read"; break;
+                    }
+                }
+                if (mal && history[entryIndex].tracker_ids && history[entryIndex].tracker_ids["mal"]) {
+                    if (req.params.medium === "anime") history[entryIndex].tracker_ids["mal"] = await MAL.updateAnimeStatus(history[entryIndex].tracker_ids["mal"], mal.access, { episode: data.episode, status, rating: data.rating });
+                    else history[entryIndex].tracker_ids["mal"] = await MAL.updateMangaStatus(history[entryIndex].tracker_ids["mal"], mal.access, { chapter: data.chapter, status, rating: data.rating });
+                } else if (mal) {
+                    if (!history[entryIndex].tracker_ids) history[entryIndex].tracker_ids = {};
+                    let media = await database.get(req.params.medium as Medium, req.params.id);
+                    if (media.tracker_ids && media.tracker_ids["mal"]) {
+                        if (req.params.medium === "anime") history[entryIndex].tracker_ids["mal"] = await MAL.createAnimeStatus(media.tracker_ids["mal"], mal.access, { episode: data.episode, status, rating: data.rating });
+                        else history[entryIndex].tracker_ids["mal"] = await MAL.createMangaStatus(media.tracker_ids["mal"], mal.access, { chapter: data.chapter, status, rating: data.rating });
+                    }
+                }
+            } else if (tracker === "anilist") {
+                let anilist = user.connections.anilist;
+                let status: AniListTypes.MediaStatus;
+                if (data.status) {
+                    switch (data.status as TrackerStatus) {
+                        case TrackerStatus.completed: status = "COMPLETED"; break;
+                        case TrackerStatus.dropped: status = "DROPPED"; break;
+                        case TrackerStatus.ongoing: status = "CURRENT"; break;
+                        case TrackerStatus.paused: status = "PAUSED"; break;
+                        case TrackerStatus.planned: status = "PLANNING"; break;
+                    }
+                }
+                if (anilist && history[entryIndex].tracker_ids && history[entryIndex].tracker_ids["anilist"]) {
+                    if (req.params.medium === "anime") history[entryIndex].tracker_ids["anilist"] = await AniList.updateAnimeStatus(history[entryIndex].tracker_ids["anilist"], anilist.access, { episode: data.episode, status, rating: data.rating });
+                    else history[entryIndex].tracker_ids["anilist"] = await AniList.updateMangaStatus(history[entryIndex].tracker_ids["anilist"], anilist.access, { chapter: data.chapter, status, rating: data.rating });
+                } else if (anilist) {
+                    if (!history[entryIndex].tracker_ids) history[entryIndex].tracker_ids = {};
+                    let media = await database.get(req.params.medium as Medium, req.params.id);
+                    if (media.tracker_ids && media.tracker_ids["anilist"]) {
+                        if (req.params.medium === "anime") history[entryIndex].tracker_ids["anilist"] = await AniList.createAnimeStatus(media.tracker_ids["anilist"], anilist.access, { episode: data.episode, status, rating: data.rating });
+                        else history[entryIndex].tracker_ids["anilist"] = await AniList.createMangaStatus(media.tracker_ids["anilist"], anilist.access, { chapter: data.chapter, status, rating: data.rating });
+                    }
+                }
+            }
+        }
+    }
+    json.data["history"][req.params.medium] = history;
+    await database.setUserData(userId, "history", json.data["history"]);
+    res.status(200).send();
+});
+
+app.delete("/history/:medium/:id", async (req, res) => {
+    if(!isMedium(req.params.medium)) res.status(400).send("Invalid medium");
+    let userId = await database.getUserId(getToken(req));
+    if(!userId) {
+        res.status(403).send("Unauthorized")
+    }
+    let data = req.body;
+    let json = await database.getUser(userId);
+    if (!json.data["history"]) json.data["history"] = {};
+    if (!json.data["history"][req.params.medium]) json.data["history"][req.params.medium] = [];
+    let history = json.data["history"][req.params.medium];
+    let entryIndex = history.findIndex(item => item.id === req.params.id);
+    if (entryIndex === -1) {
+        res.status(200).send();
+        return;
+    }
+    let spliced = history.splice(entryIndex, 1)[0];
+    if (data.trackers) {
+        let user = await database.getUser(userId);
+        for (let tracker of data.trackers) {
+            if (tracker === "mal") {
+                let mal = user.connections.mal;
+                if (mal && spliced.tracker_ids && spliced.tracker_ids["mal"]) {
+                    if (req.params.medium === "anime") await MAL.deleteAnimeStatus(spliced.tracker_ids["mal"], mal.access);
+                    else MAL.deleteMangaStatus(spliced.tracker_ids["mal"], mal.access);
+                }
+            } else if (tracker === "anilist") {
+                let anilist = user.connections.anilist;
+                if (anilist && spliced.tracker_ids && spliced.tracker_ids["anilist"]) {
+                    if (req.params.medium === "anime") await AniList.deleteAnimeStatus(spliced.tracker_ids["anilist"], anilist.access);
+                    else AniList.deleteMangaStatus(spliced.tracker_ids["anilist"], anilist.access);
+                }
+            }
+        }
+    }
+    json.data["history"][req.params.medium] = history;
+    await database.setUserData(userId, "history", json.data["history"]);
+    res.status(200).send()
 });
 
 app.post("/", (req, res) => {

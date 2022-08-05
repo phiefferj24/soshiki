@@ -40,10 +40,14 @@
         &-title {
             font-size: 0.9rem;
             overflow: hidden;
+            word-break: break-all;
+            hyphens: auto;
         }
         &-subtitle {
             font-size: 0.6rem;
             overflow: hidden;
+            word-break: break-all;
+            hyphens: auto;
             color: $accent-text-color-light;
             @media (prefers-color-scheme: dark) {
                 color: $accent-text-color-dark;

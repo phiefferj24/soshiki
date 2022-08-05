@@ -23,13 +23,14 @@
 </svelte:head>
 
 <SearchBar bind:value={query} on:submit={submit}/>
-<h2>Search results for '{savedQuery}'
-    {#if results}
-        {#await results then results} 
-            - {results.length}
-        {/await}
-    {/if}
-</h2>
+{#if results}
+    {#await results then results} 
+        <div class="heading">
+            <div class="heading-title">Results for '{savedQuery}'</div>
+            <div class="heading-count">{results.length}</div>
+        </div>
+    {/await}
+{/if}
 <div class="results">
     {#if results}
         {#await results then results} 
@@ -43,11 +44,15 @@
                     />
                 </div>
             {/each}
+            {#each new Array(12 - results.length % 12) as _}
+                <div class="result"></div>
+            {/each}
         {/await}
     {/if}
 </div>
 
 <style lang='scss'>
+    @use "../../../styles/global.scss" as *;
     .results {
         display: flex;
         flex-wrap: wrap;
@@ -58,5 +63,32 @@
     .result {
         width: 10rem;
         height: 15rem;
+    }
+    .heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 2rem;
+        margin-top: 2rem;
+        font-weight: bolder;
+        &-count {
+            color: $accent-text-color-light;
+            @media (prefers-color-scheme: dark) {
+                color: $accent-text-color-dark;
+            }
+        }
+    }
+    @media only screen and (max-width: 800px) {
+        .result {
+            width: unset;
+            height: unset;
+            aspect-ratio: 2 / 3;
+            flex: 1 0 21%;
+        }
+    }
+    @media only screen and (max-width: 480px) {
+        .result {
+            flex-basis: 34%;
+        }
     }
 </style>

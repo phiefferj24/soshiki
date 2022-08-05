@@ -50,7 +50,7 @@ import LoadingBar from "$lib/LoadingBar.svelte";
                     });
                     mal = null;
                 } else {
-                    await goto(`${manifest.api.url}/user/connect/mal/redirect?access=${Cookie.get("access")}}`);
+                    await goto(`${manifest.api.url}/user/connect/mal/redirect?access=${Cookie.get("access")}`);
                 }
             }}>{mal ? "Disconnect" : "Connect"}</span>
         </div>

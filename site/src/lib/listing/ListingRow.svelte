@@ -3,16 +3,14 @@
     export let title: string = '';
     export let subtitle: string = '';
     export let href: string;
-    $: rtitle = title.length > 40 ? title.substring(0, 37).trim() + '...' : title;
-    $: rsubtitle = subtitle.length > 40 ? subtitle.substring(0, 37).trim() + '...' : subtitle;
     let imageHeight;
 </script>
 
 <a href={href || ""} class="listing-row" on:click>
     <div class="listing-row-image" style:--cover="url({cover})" bind:clientHeight={imageHeight} style:--height="{imageHeight}px"></div>
     <div class="listing-row-content">
-        <span class="listing-row-title">{rtitle}</span>
-        <span class="listing-row-subtitle">{rsubtitle}</span>
+        <span class="listing-row-title">{title}</span>
+        <span class="listing-row-subtitle">{subtitle}</span>
     </div>
 </a>
 
@@ -44,10 +42,14 @@
         &-title {
             font-size: 1.25rem;
             overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         &-subtitle {
             font-size: 1rem;
             overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
             color: $accent-text-color-light;
             @media (prefers-color-scheme: dark) {
                 color: $accent-text-color-dark;

@@ -7,8 +7,10 @@
     import Cookie from 'js-cookie';
     import { goto } from '$app/navigation';
     import LoadingBar from '$lib/LoadingBar.svelte';
+    import * as Sources from '$lib/sources';
     let mounted = false;
     async function init() {
+        await Sources.init();
         let access = Cookie.get("access");
         let refresh = Cookie.get("refresh");
         let id = Cookie.get("id");
@@ -27,19 +29,24 @@
     }
     async function setUser(id: string) {
         let res = await fetch(`https://api.soshiki.moe/user/${id}`);
-            let data = await res.json();
-            if (data) {
-                user.set(data);
-            }
+        let data = await res.json();
+        if (data) {
+            user.set(data);
+        }
     }
     onMount(init);
+
+    let fullscreen = false;
+    page.subscribe(val => fullscreen = val.url.searchParams.get("fullscreen") === "true");
 </script>
 
 <svelte:head>
     <title>{$page.url.pathname.split('/').length > 2 ? $page.url.pathname.split('/')[2].replace(/.?/, m => m.toUpperCase()) + ' - ' : ''}Soshiki</title>
 </svelte:head>
 {#if mounted}
-    <Header />
+    {#if !fullscreen}
+        <Header />
+    {/if}
     <slot />
 {:else}
     <LoadingBar />
@@ -73,6 +80,15 @@
     }
     * {
         box-sizing: border-box;
+    }
+    button, input[type="submit"], input[type="reset"] {
+        background: none;
+        color: inherit;
+        border: none;
+        padding: 0;
+        font: inherit;
+        cursor: pointer;
+        outline: inherit;
     }
 
     @media (prefers-color-scheme: dark) {

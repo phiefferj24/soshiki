@@ -49,7 +49,7 @@ export class SingleSelectFilter implements Filter {
     index: number;
     canExclude: boolean;
     excluding: boolean;
-    constructor(name: string, value: string[], canExclude: boolean, ids?: any[], index: number = 0, excluding: boolean = false) {
+    constructor(name: string, value: string[], canExclude: boolean, ids?: any[], index: number = -1, excluding: boolean = false) {
         this.name = name;
         this.value = value;
         this.canExclude = canExclude;
@@ -66,8 +66,8 @@ export class MultiSelectFilter implements Filter {
     ids?: any[];
     indices: number[];
     canExclude: boolean;
-    excludings: boolean[];
-    constructor(name: string, value: string[], canExclude: boolean, ids?: any[], indices: number[] = [], excludings: boolean[] = []) {
+    excludings: number[];
+    constructor(name: string, value: string[], canExclude: boolean, ids?: any[], indices: number[] = [], excludings: number[] = []) {
         this.name = name;
         this.value = value;
         this.canExclude = canExclude;
@@ -85,12 +85,22 @@ export class SortFilter implements Filter {
     index: number;
     canAscend: boolean;
     ascending: boolean;
-    constructor(name: string, value: string[], canAscend: boolean, ids?: any[], index: number = 0, ascending: boolean = false) {
+    constructor(name: string, value: string[], canAscend: boolean, ids?: any[], index: number = -1, ascending: boolean = false) {
         this.name = name;
         this.value = value;
         this.canAscend = canAscend;
         this.ids = ids;
         this.index = index;
         this.ascending = ascending;
+    }
+}
+
+export class Listing {
+    name: string;
+    id: string;
+
+    constructor(name: string, id: string) {
+        this.name = name;
+        this.id = id;
     }
 }

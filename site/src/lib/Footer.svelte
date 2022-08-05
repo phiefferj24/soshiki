@@ -10,8 +10,8 @@
 
     const types = [
         {name: "Manga", type: 'manga' as Medium, icon: "book_fill"},
-        {name: "Anime", type: 'anime' as Medium, icon: "film_fill"},
-        {name: "Light Novels", type: 'novel' as Medium, icon: "doc_text_fill"},
+        //{name: "Anime", type: 'anime' as Medium, icon: "film_fill"},
+        //{name: "Light Novels", type: 'novel' as Medium, icon: "doc_text_fill"},
     ]
 
     async function mediumChanged() {

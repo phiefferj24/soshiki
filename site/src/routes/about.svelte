@@ -34,8 +34,11 @@
     <div class="about-section">
         <span class="about-section-heading">Credits</span>
         <span class="about-section-paragraph">
-            Huge thanks to <strong>s0n1c</strong> for not only inspiring Soshiki, but also for helping me with everything throughout its development.<br/>
-            Thanks to <strong>Skitty</strong> for also inspiring the project and creating Aidoku, one of the manga extension sets.
+            Thanks to the following:<br/>
+            <strong>s0n1c</strong> for not only inspiring Soshiki, but also for helping me with everything throughout its development.<br/>
+            <strong>Skitty</strong> for also inspiring the project and creating Aidoku, one of the manga extension sets.<br/>
+            <strong>Krabbie0</strong> and <strong>aa</strong> for being alpha testers and giving feedback on the UI.<br/>
+            <strong>Mannton</strong> for helping me with paperback source support.
         </span>
     </div>
 </div>

@@ -59,6 +59,14 @@ export enum Status {
     hiatus,
 }
 
+export enum TrackerStatus {
+    planned,
+    ongoing,
+    completed,
+    dropped,
+    paused
+}   
+
 export type Character = {
     name: string,
     role: string,

@@ -1,0 +1,8 @@
+{
+    "name": "paperback",
+    "version": "0.0.1",
+    "dependencies": {
+        "cheerio": "^1.0.0-rc.12",
+        "paperback-extensions-common": "^5.0.0-alpha.7"
+    }
+}

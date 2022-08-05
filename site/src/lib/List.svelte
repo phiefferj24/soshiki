@@ -28,9 +28,9 @@
     @use '../styles/global.scss' as *;
     .list {
         border-radius: 0.5rem;
-        border: 2px solid $accent-background-color-light;
+        border: 2px solid $dropdown-border-color-light;
         @media (prefers-color-scheme: dark) {
-            border-color: $accent-background-color-dark;
+            border-color: $dropdown-border-color-dark;
         }
 
         &-header {

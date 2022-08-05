@@ -2,6 +2,24 @@
     "manga": {
         "aidoku": [
             "https://skittyblock.github.io/aidoku-community-sources/index.json"
+        ],
+        "paperback": [
+            "https://thenetsky.github.io/extensions-mangastream/0.6",
+            "https://thenetsky.github.io/extensions-sources/primary",
+            "https://thenetsky.github.io/extensions-sources/nsfw",
+            "https://thenetsky.github.io/netskys-extensions/0.6",
+            "https://thenetsky.github.io/netskys-extensions/0.6-nsfw",
+            "https://thenetsky.github.io/extensions-buddycomplex/0.6",
+            "https://thenetsky.github.io/extensions-generic/madara",
+            "https://thenetsky.github.io/extensions-generic/mangabox",
+            "https://thenetsky.github.io/extensions-generic/nepnep",
+            "https://thenetsky.github.io/extensions-generic/guya",
+            "https://thenetsky.github.io/extensions-generic/bentai",
+            "https://thenetsky.github.io/extensions-generic/genkan",
+            "https://pandeynmn.github.io/nmns-extensions/main",
+            "https://nouun.github.io/paperback-extensions/master",
+            "https://pandeynmn.github.io/extensions-foreign/ninemanga",
+            "https://pandeynmn.github.io/extensions-foreign/main"
         ]
     },
     "anime": {},

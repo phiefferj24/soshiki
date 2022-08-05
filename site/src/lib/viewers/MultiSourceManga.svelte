@@ -7,6 +7,9 @@
     import LoadingBar from "$lib/LoadingBar.svelte";
     import List from "$lib/List.svelte";
     import Dropdown from "$lib/Dropdown.svelte";
+    import Cookie from "js-cookie";
+    import { TrackerStatus } from "soshiki-types";
+import { get_root_for_style } from "svelte/internal";
 
     export let fullscreen: boolean;
     $: updateFullscreen(fullscreen);
@@ -23,16 +26,14 @@
         scrollToPage();
     }
 
-    export let source: MangaSource;
-    let chapters: MangaChapter[];
+    export let sources: {[platform: string]: {[sourceId: string]: MangaSource}};
+    export let chapters: MangaChapter[];
     let chapterPages: MangaPage[];
     let previousChapterPages: MangaPage[];
     let nextChapterPages: MangaPage[];
-    let chapterIndex: number;
+    let chapterIndex = parseInt($page.params.chapter);
     let pageNum: number;
     let mounted = false;
-    let mangaId = decodeURIComponent($page.params.id);
-    let chapterId = decodeURIComponent($page.params.chapter);
 
     let pagesDiv: HTMLDivElement;
     let rawScrollLeft = 0;
@@ -174,9 +175,7 @@
     }
 
     async function init() {
-        chapters = await source.getMangaChapters(mangaId).then(chapters => chapters.filter((chapter, index) => chapters.findIndex(c => chapter.chapter === c.chapter) === index));
-        chapterIndex = chapters.findIndex(c => c.id === chapterId);
-        chapterPages = await source.getMangaChapterPages(mangaId, chapterId);
+        chapterPages = await sources[chapters[chapterIndex]["platform"]][chapters[chapterIndex]["sourceId"]].getMangaChapterPages(chapters[chapterIndex]["mangaId"], chapters[chapterIndex].id);
         pageNum = parseInt($page.url.searchParams.get("page") ?? "1");
         await loadChapters(Direction.none);
         if (readingMode === ReadingMode.rtl) {
@@ -278,7 +277,7 @@
                 }
             }
             pageNum = 0;
-            await goto($page.url.toString().replace(/\/read\/([^/]*)/, `/read/${encodeURIComponent(chapters[chapterIndex].id)}`) + "?" + $page.url.searchParams.toString(), { noscroll: true });
+            await goto($page.url.toString().replace(/\/read\/([^/]*)/, `/read/${chapterIndex}`) + "?" + $page.url.searchParams.toString(), { noscroll: true });
         } else if (direction === Direction.reverse) {
             if (chapterIndex === chapters.length - 1) return;
             changingChapter = true;
@@ -326,7 +325,7 @@
                 }
             }
             pageNum = chapterPages.length + 1;
-            await goto($page.url.toString().replace(/\/read\/([^/]*)/, `/read/${encodeURIComponent(chapters[chapterIndex].id)}`) + "?" + $page.url.searchParams.toString(), { noscroll: true });
+            await goto($page.url.toString().replace(/\/read\/([^/]*)/, `/read/${chapterIndex}`) + "?" + $page.url.searchParams.toString(), { noscroll: true });
         }
         overlay.style.display = "none";
         if (readingMode === ReadingMode.vertical) {
@@ -334,6 +333,18 @@
         } else {    
             pagesDiv.style.overflowX = "scroll";
         }
+        await fetch(`https://api.soshiki.moe/history/manga/${$page.params.id}`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${Cookie.get("access")}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                page: 1,
+                chapter: chapters[chapterIndex].chapter,
+                trackers: ["mal", "anilist"]
+            })
+        });
         changingChapter = false;
     }
 
@@ -342,18 +353,18 @@
         if (direction === Direction.forward) {
             previousChapterPages = chapterPages;
             chapterPages = nextChapterPages;
-            if (chapterIndex > 0) nextChapterPages = await source.getMangaChapterPages(mangaId, chapters[chapterIndex - 1].id);
+            if (chapterIndex > 0) nextChapterPages = await sources[chapters[chapterIndex]["platform"]][chapters[chapterIndex]["sourceId"]].getMangaChapterPages(chapters[chapterIndex - 1]["mangaId"], chapters[chapterIndex - 1].id);
             else nextChapterPages = [];
         } else if (direction === Direction.reverse) {
             nextChapterPages = chapterPages;
             chapterPages = previousChapterPages;
-            if (chapterIndex < chapters.length - 1) previousChapterPages = await source.getMangaChapterPages(mangaId, chapters[chapterIndex + 1].id);
+            if (chapterIndex < chapters.length - 1) previousChapterPages = await sources[chapters[chapterIndex]["platform"]][chapters[chapterIndex]["sourceId"]].getMangaChapterPages(chapters[chapterIndex + 1]["mangaId"], chapters[chapterIndex + 1].id);
             else previousChapterPages = [];
         } else {
-            if (chapterIndex < chapters.length - 1) previousChapterPages = await source.getMangaChapterPages(mangaId, chapters[chapterIndex + 1].id);
+            if (chapterIndex < chapters.length - 1) previousChapterPages = await sources[chapters[chapterIndex]["platform"]][chapters[chapterIndex]["sourceId"]].getMangaChapterPages(chapters[chapterIndex + 1]["mangaId"], chapters[chapterIndex + 1].id);
             else previousChapterPages = [];
-            chapterPages = await source.getMangaChapterPages(mangaId, chapterId);
-            if (chapterIndex > 0) nextChapterPages = await source.getMangaChapterPages(mangaId, chapters[chapterIndex - 1].id);
+            chapterPages = await sources[chapters[chapterIndex]["platform"]][chapters[chapterIndex]["sourceId"]].getMangaChapterPages(chapters[chapterIndex]["mangaId"], chapters[chapterIndex].id);
+            if (chapterIndex > 0) nextChapterPages = await sources[chapters[chapterIndex]["platform"]][chapters[chapterIndex]["sourceId"]].getMangaChapterPages(chapters[chapterIndex - 1]["mangaId"], chapters[chapterIndex - 1].id);
             else nextChapterPages = [];
         }
     }
@@ -363,7 +374,7 @@
         infoPage.classList.add("reader-info-page");
         infoPage.innerHTML = `
             ${chapterIndex === chapters.length - 1 ? "" : `<span class="reader-info-page-span">Previous: Chapter ${chapters[chapterIndex + 1].chapter}</span>`}
-            ${chapterIndex === 0 ? "" : `<span class="reader-info-page-span">Next: Chapter ${chapters[chapterIndex].chapter}</span>`}
+            ${chapterIndex === -1 ? "" : `<span class="reader-info-page-span">Next: Chapter ${chapters[chapterIndex].chapter}</span>`}
         `;
         infoPage.dataset.chapterprev = (chapterIndex + 1).toString();
         infoPage.dataset.chapternext = chapterIndex.toString();
@@ -379,7 +390,7 @@
         if (page.base64 && page.base64.length > 0) {
             img.src = page.base64;
         } else {
-            source.modifyImageRequest(new Request(manifest.proxy.url + "/" + page.url)).then(req => fetch(req)).then(res => res.blob()).then(blob => img.src = URL.createObjectURL(blob));
+            sources[chapters[chapterIndex]["platform"]][chapters[chapterIndex]["sourceId"]].modifyImageRequest(new Request(manifest.proxy.url + "/" + page.url)).then(req => fetch(req)).then(res => res.blob()).then(blob => img.src = URL.createObjectURL(blob));
         }
         img.classList.add("reader-page");
         img.dataset.chapter = chapterIndex.toString();
@@ -403,7 +414,32 @@
     }
 
     onMount(init);
+
+    let exiting = false;
+    async function exit() {
+        if (exiting) return;
+        exiting = true;
+        await fetch(`https://api.soshiki.moe/history/manga/${$page.params.id}`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${Cookie.get("access")}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                page: pageNum,
+                chapter: chapters[chapterIndex].chapter,
+                trackers: ["mal", "anilist"]
+            })
+        });
+        await goto($page.url.toString().replace(/\/read\/([^/]*)/, "/info"));
+    }
 </script>
+
+<svelte:head>
+    {#if mounted}
+        <title>{(chapters[chapterIndex].volume !== null && typeof chapters[chapterIndex].volume !== "undefined") ? `Volume ${chapters[chapterIndex].volume} ` : ""}Chapter {chapters[chapterIndex].chapter} {chapters[chapterIndex].title ? `- ${chapters[chapterIndex].title}` : ""} - Soshiki</title>
+    {/if}
+</svelte:head>
 
 <div class="overlay" class:hidden={!settingsOpen}></div>
 
@@ -411,9 +447,7 @@
     <div class="reader" class:reader-windowed={!fullscreen}>
         <div class="reader-controls reader-controls-top">
             <div class="reader-controls-tight-group">
-                <a href={$page.url.toString().replace(/\/read\/([^/]*)/, "/info")}>
-                    <i class="f7-icons reader-controls-glyph">xmark</i>
-                </a>
+                <i class="f7-icons reader-controls-glyph" on:click={() => exit()}>xmark</i>
                 <div class="reader-controls-placeholder"></div>
             </div>
             <div class="reader-controls-group">

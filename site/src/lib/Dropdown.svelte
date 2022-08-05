@@ -1,5 +1,6 @@
 <script lang="ts">
     export let title: string;
+    export let label: string = "";
     export let dropped = false;
     let dropdownContent: HTMLElement;
     let dropdownToggle: HTMLElement;
@@ -15,6 +16,7 @@
 
 <div class="dropdown">
     <div class="dropdown-header">
+        <span class="dropdown-label">{label}</span>
         <span class="dropdown-title">{title}</span>
         <i class="f7-icons dropdown-toggle dropdown-glyph" bind:this={dropdownToggle} on:click={() => dropped = !dropped}>{dropped ? "chevron_up" : "chevron_down"}</i>
     </div>
@@ -53,8 +55,18 @@
         }
         &-header {
             display: flex;
-            gap: 1rem;
+            gap: 0.5rem;
             align-items: center;
+            font-weight: 600;
+        }
+        &-label {
+            color: $accent-text-color-light;
+            @media (prefers-color-scheme: dark) {
+                color: $accent-text-color-dark;
+            }
+        }
+        &-glyph {
+            margin-left: 0.5rem;
         }
     }
 </style>
