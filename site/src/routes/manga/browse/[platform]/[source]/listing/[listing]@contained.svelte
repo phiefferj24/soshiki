@@ -8,13 +8,10 @@
     import ListingCard from "$lib/listing/ListingCard.svelte";
     import manifest from "$lib/manifest";
     import LoadingBar from "$lib/LoadingBar.svelte";
-    import { FilterBase } from "soshiki-packages/manga/aidoku-ts/models/filter";
-    import Filter from "$lib/search/Filter.svelte";
     import { goto } from "$app/navigation";
-    let medium = $page.params.medium;
     let sourceId = $page.params.source;
     let platform = $page.params.platform;
-    let source = Sources.sources[medium][platform].find(s => s.id === sourceId) as MangaSource.MangaSource;
+    let source = Sources.sources.manga[platform].find(s => s.id === sourceId) as MangaSource.MangaSource;
     let mounted = false;
     let currentPage = 1;
     let gettingMore = false;
@@ -35,7 +32,7 @@
     let searchText: string;
     async function updateMangaList() {
         if (searchText && searchText.length > 0) {
-            await goto(`/${medium}/browse/${platform}/${sourceId}?q=${encodeURIComponent(searchText)}`);
+            await goto(`/manga/browse/${platform}/${sourceId}?q=${encodeURIComponent(searchText)}`);
         }
     }
     
@@ -53,7 +50,7 @@
 {#if mounted}
     <SearchBar placeholder="Search {source.name}" on:submit={updateMangaList} bind:value={searchText} listings={listings}/>
     <div class="heading">
-        <a href="/{$page.params.medium}/browse/{$page.params.platform}/{$page.params.source}"><i class="f7-icons heading-glyph">chevron_left</i></a>
+        <a href="/manga/browse/{$page.params.platform}/{$page.params.source}"><i class="f7-icons heading-glyph">chevron_left</i></a>
         <span class="heading-title">{listing.name}</span>
     </div>
     <div class="results">
@@ -63,7 +60,7 @@
                     title={manga.title || ""}
                     subtitle={manga.author || ""}
                     cover={`${manifest.proxy.url}/${manga.cover}` || ""}
-                    href={`/${medium}/browse/${platform}/${sourceId}/id/${encodeURIComponent(manga.id)}/info`}
+                    href={`/manga/browse/${platform}/${sourceId}/id/${encodeURIComponent(manga.id)}/info`}
                 />
             </div>
         {:else}

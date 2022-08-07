@@ -7,10 +7,9 @@
     import LoadingBar from "$lib/LoadingBar.svelte";
     import List from "$lib/List.svelte";
     import { DateTime } from "luxon";
-    let medium = $page.params.medium;
     let sourceId = $page.params.source;
     let platform = $page.params.platform;
-    let source = Sources.sources[medium][platform].find(s => s.id === sourceId) as MangaSource.MangaSource;
+    let source = Sources.sources.manga[platform].find(s => s.id === sourceId) as MangaSource.MangaSource;
     let mounted = false;
     let info: MangaSource.Manga;
     let chapters: MangaSource.MangaChapter[];
@@ -24,7 +23,7 @@
     onMount(init);
     let headerTextHeight = 0;
     async function updateLink() {
-        let res = await fetch(`${manifest.api.url}/link/${medium}/${platform}/${sourceId}/${encodeURIComponent($page.params.id)}`);
+        let res = await fetch(`${manifest.api.url}/link/manga/${platform}/${sourceId}/${encodeURIComponent($page.params.id)}`);
         let json = await res.json();
         if (!json || !json.id || json.id.length === 0) {
             link = null;
@@ -59,7 +58,7 @@
                 <div class="info-header-statuses">
                     <div class="info-header-status">
                         <div class="info-header-status-chip" style:background-color={link ? "green" : "red"}></div>
-                        <a href={link ? `/${medium}/${link}/info` : "./link"} class="info-header-status">{link ? "LINKED" : "UNLINKED"}</a>
+                        <a href={link ? `/manga/${link}/info` : "./link"} class="info-header-status">{link ? "LINKED" : "UNLINKED"}</a>
                     </div>
                 </div>
             </div>

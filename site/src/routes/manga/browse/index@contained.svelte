@@ -3,7 +3,6 @@
     import { onMount } from "svelte";
     import * as MangaSource from "soshiki-packages/manga/mangaSource"
     import * as Sources from "$lib/sources"
-    import type { Medium } from "soshiki-types";
     import type { SourceType } from "soshiki-packages/source";
     import { goto } from "$app/navigation";
     import List from "$lib/List.svelte";
@@ -13,59 +12,28 @@
     let mounted = false;
     onMount(async () => {
         let soshikiJson = JSON.parse(localStorage.getItem("soshiki") || "{}");
-        let installedMangaSources = soshikiJson.installedMangaSources || [];
-        let installedAnimeSources = soshikiJson.installedAnimeSources || [];
-        let installedNovelSources = soshikiJson.installedNovelSources || [];
-        switch($page.params.medium) {
-            case "manga":
-                installedSources = installedMangaSources;
-                break;
-            case "anime":
-                installedSources = installedAnimeSources;
-                break;
-            case "novel":
-                installedSources = installedNovelSources;
-                break;
-        }
+        installedSources = soshikiJson.installedMangaSources || [];
         let fullExternalSources = await fetch("/source-lists").then(res => res.json());
-        let externalAnimeSources = fullExternalSources.anime;
-        let externalMangaSources = fullExternalSources.manga;
-        let externalNovelSources = fullExternalSources.novel;
-        let tempExternalSources = [];
-        switch($page.params.medium) {
-            case "manga":
-                tempExternalSources = externalMangaSources;
-                break;
-            case "anime":
-                tempExternalSources = externalAnimeSources;
-                break;
-            case "novel":
-                tempExternalSources = externalNovelSources;
-                break;
-        }
+        let tempExternalSources = fullExternalSources.manga;
         for(let platform of Object.keys(tempExternalSources)) {
             let lists = tempExternalSources[platform];
             externalSources[platform] = [];
-            switch($page.params.medium) {
-                case "manga":
-                    for(let list of lists) {
-                        let parsed = await MangaSource.parseSourceList(platform as MangaSource.MangaSourceType, list);
-                        parsed = parsed.filter(source => !installedSources[platform] || installedSources[platform].findIndex(source2 => source2.id === source.id) === -1);
-                        externalSources[platform] = [...externalSources[platform], ...parsed];
-                    }
-                    break;
+            for(let list of lists) {
+                let parsed = await MangaSource.parseSourceList(platform as MangaSource.MangaSourceType, list);
+                parsed = parsed.filter(source => !installedSources[platform] || installedSources[platform].findIndex(source2 => source2.id === source.id) === -1);
+                externalSources[platform] = [...externalSources[platform], ...parsed];
             }
         }
         mounted = true;
     })
 
     async function installSource(platform: string, source: any) {
-        await Sources.installSource($page.params.medium as Medium, platform as SourceType, source);
+        await Sources.installSource("manga", platform as SourceType, source);
         installedSources[platform] = [...installedSources[platform] || [], source];
         externalSources[platform] = externalSources[platform].filter(s => s.id !== source.id);
     }
     async function removeSource(platform: string, source: any) {
-        await Sources.removeSource($page.params.medium as Medium, platform as SourceType, source.id);
+        await Sources.removeSource("manga", platform as SourceType, source.id);
         installedSources[platform] = installedSources[platform].filter(s => s.id !== source.id);
         externalSources[platform] = [...externalSources[platform] || [], source];
     }

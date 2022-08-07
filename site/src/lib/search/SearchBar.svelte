@@ -107,11 +107,11 @@
         {#if listings && listings.length > 0}
             <div class="searchbar-listings" class:searchbar-listings-dropped={listingsDropped}>
                 <span class="searchbar-listings-subtitle">Listings</span>
-                <a class="searchbar-listings-item" href="/{$page.params.medium}/browse/{$page.params.platform}/{$page.params.source}">
+                <a class="searchbar-listings-item" href="/{$currentMedium}/browse/{$page.params.platform}/{$page.params.source}">
                     <span class="searchbar-listings-title">All</span>
                 </a>
                 {#each listings as listing}
-                    <a class="searchbar-listings-item" href="/{$page.params.medium}/browse/{$page.params.platform}/{$page.params.source}/listing/{listing.id}">
+                    <a class="searchbar-listings-item" href="/{$currentMedium}/browse/{$page.params.platform}/{$page.params.source}/listing/{listing.id}">
                         <span class="searchbar-listings-title">{listing.name}</span>
                     </a>
                 {/each}

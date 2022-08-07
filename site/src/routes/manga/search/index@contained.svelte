@@ -1,11 +1,9 @@
 <script lang="ts">
-    import { currentMedium } from '$lib/stores';
     import { goto } from '$app/navigation';
     import SearchBar from '$lib/search/SearchBar.svelte';
-    import { type Filter, FilterType } from 'soshiki-packages/source';
     let query = '';
     async function submit() {
-        await goto(`/${$currentMedium}/search/${query}`)
+        await goto(`/manga/search/${query}`)
     }
 </script>
 

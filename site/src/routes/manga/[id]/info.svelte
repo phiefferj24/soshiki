@@ -2,7 +2,6 @@
     import { page } from "$app/stores";
     import Cookie from 'js-cookie';
     import manifest from "$lib/manifest";
-    import { currentMedium } from "$lib/stores";
     import { onMount } from "svelte";
     import List from "$lib/List.svelte";
     import type { MangaChapter } from "soshiki-packages/manga/mangaSource";
@@ -11,7 +10,6 @@
     import Dropdown from "$lib/Dropdown.svelte";
     import { TrackerStatus } from "soshiki-types";
     import Stars from "$lib/Stars.svelte";
-    let medium = $page.params.medium;
     let id = $page.params.id;
     let info: any;
     let headerTextHeight = 0;
@@ -23,7 +21,7 @@
     let history: {chapter?: number, page?: number, status?: TrackerStatus, rating?: number};
     let library: string[];
     async function init() {
-        info = await fetch(`${manifest.api.url}/info/${medium}/${id}`, {
+        info = await fetch(`${manifest.api.url}/info/manga/${id}`, {
             headers: {
                 Authorization: `Bearer ${Cookie.get("access")}`
             }
@@ -32,8 +30,8 @@
             let ids = info.source_ids;
             let reqs: Promise<MangaChapter[]>[] = [];
             for (let platform of Object.keys(info.source_ids)) {
-                if (!sources[medium][platform]) continue;
-                for (let source of sources[medium][platform]) {
+                if (!sources.manga[platform]) continue;
+                for (let source of sources.manga[platform]) {
                     if (ids[platform][source.id]) {
                         reqs.push(source.getMangaChapters(decodeURIComponent(ids[platform][source.id].id)).then(res => {
                             res["sourceName"] = source.name;
@@ -61,7 +59,7 @@
         })();
         historyGot = (async () => {
             await chaptersGot;
-            let res = await fetch(`${manifest.api.url}/history/${$page.params.medium}/${$page.params.id}`, {
+            let res = await fetch(`${manifest.api.url}/history/manga/${$page.params.id}`, {
                 headers: { Authorization: `Bearer ${Cookie.get("access")}` }
             });
             let json = await res.json();
@@ -75,7 +73,7 @@
             history =  { chapter: json["chapter"], page: json["page"], status: json["status"] as TrackerStatus, rating: json["rating"] };
         })();
 
-        fetch(`${manifest.api.url}/library/${$page.params.medium}`, {
+        fetch(`${manifest.api.url}/library/manga`, {
             headers: { Authorization: `Bearer ${Cookie.get("access")}` }
         }).then(res => res.json()).then(json => library = json);
         mounted = true;
@@ -83,7 +81,7 @@
     onMount(init);
 
     async function setStatus(status: number) {
-        await fetch(`${manifest.api.url}/history/${$page.params.medium}/${$page.params.id}`, {
+        await fetch(`${manifest.api.url}/history/manga/${$page.params.id}`, {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${Cookie.get("access")}`,
@@ -115,7 +113,7 @@
     }
 
     async function setLibrary(state: boolean) {
-        await fetch(`${manifest.api.url}/library/${$page.params.medium}/${$page.params.id}`, {
+        await fetch(`${manifest.api.url}/library/manga/${$page.params.id}`, {
             method: state ? "PUT" : "DELETE",
             headers: { Authorization: `Bearer ${Cookie.get("access")}` }
         });
@@ -165,11 +163,11 @@
                 <div class="info-header-statuses">
                     <div class="info-header-status">
                         <div class="info-header-status-chip" style:background-color={info.info.mal ? "green" : "red"}></div>
-                        <a href={info.info.mal ? `https://myanimelist.net/${medium === "anime" ? "anime" : "manga"}/${info.info.mal.id}` : ""} class="info-header-status">MAL</a>
+                        <a href={info.info.mal ? `https://myanimelist.net/manga/${info.info.mal.id}` : ""} class="info-header-status">MAL</a>
                     </div>
                     <div class="info-header-status">
                         <div class="info-header-status-chip" style:background-color={info.info.anilist ? "green" : "red"}></div>
-                        <a href={info.info.anilist ? `https://anilist.co/${medium === "anime" ? "anime" : "manga"}/${info.info.anilist.id}`: ""} class="info-header-status">ANILIST</a>
+                        <a href={info.info.anilist ? `https://anilist.co/manga/${info.info.anilist.id}`: ""} class="info-header-status">ANILIST</a>
                     </div>
                     {#if library}
                         {@const includes = library.includes($page.params.id)}
@@ -182,7 +180,7 @@
                 {#if history}
                     <div class="info-header-row">
                         <Dropdown bind:dropped={statusDropped} label={"Status"} title={Object.keys(TrackerStatus).filter(v => isNaN(Number(v)))[history.status ?? 0].toString().charAt(0).toUpperCase() + Object.keys(TrackerStatus).filter(v => isNaN(Number(v)))[history.status ?? 0].toString().substring(1)}>
-                            {#each Object.keys(TrackerStatus).filter(v => isNaN(Number(v))) as status}
+                            {#each Object.keys(TrackerStatus).filter(v => isNaN(Number(v))).filter(v => v !== "unknown") as status}
                                 <span class="info-header-dropdown-span" on:click={() => setStatus(TrackerStatus[status])}>{status.toString().charAt(0).toUpperCase() + status.toString().substring(1)}</span>
                             {/each}
                         </Dropdown>

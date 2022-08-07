@@ -11,15 +11,11 @@
 
     let fullscreen = $page.url.searchParams.get("fullscreen") === "true";
     let mounted = false;
-    let medium = $page.params.medium;
     let id = $page.params.id;
     let chapters: MangaSource.MangaChapter[];
     let sources: {[platform: string]: {[sourceId: string]: MangaSource.MangaSource}} = {};
     async function init() {
-        if($page.params.medium === "anime") {
-            await goto($page.url.toString().replace(/\/read\/([^/]*)/, "/watch/$1"));
-        }
-        chapters = await fetch(`${manifest.api.url}/info/${medium}/${id}`, {
+        chapters = await fetch(`${manifest.api.url}/info/manga/${id}`, {
             headers: {
                 Authorization: `Bearer ${Cookie.get("access")}`
             }
@@ -27,8 +23,8 @@
             let ids = info.source_ids;
             let reqs: Promise<MangaSource.MangaChapter[]>[] = [];
             for (let platform of Object.keys(info.source_ids)) {
-                if (!Sources.sources[medium][platform]) continue;
-                for (let source of Sources.sources[medium][platform]) {
+                if (!Sources.sources.manga[platform]) continue;
+                for (let source of Sources.sources.manga[platform]) {
                     if (ids[platform][source.id]) {
                         reqs.push(source.getMangaChapters(decodeURIComponent(ids[platform][source.id].id)).then(res => {
                             res["sourceName"] = source.name;
@@ -50,7 +46,7 @@
                             chap["platform"] = single["platform"];
                             chap["mangaId"] = single["mangaId"];
                             if (!sources[single["platform"]]) sources[single["platform"]] = {};
-                            if (!sources[single["platform"]][single["sourceId"]]) sources[single["platform"]][single["sourceId"]] = Sources.sources[medium][single["platform"]].find(s => s.id === single["sourceId"]);
+                            if (!sources[single["platform"]][single["sourceId"]]) sources[single["platform"]][single["sourceId"]] = Sources.sources.manga[single["platform"]].find(s => s.id === single["sourceId"]);
                             reduced.push(chap);
                         }
                     }
