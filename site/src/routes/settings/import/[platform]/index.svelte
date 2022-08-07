@@ -20,7 +20,8 @@
     let linkMangaPopup = false;
     let sourceIdList: string[];
     let externalSources: ExternalMangaSource[] = [];
-    let installedSourceIdList: string[] = Sources.installedSources.manga[$page.params.platform];
+    let soshikiJson = JSON.parse(localStorage.getItem("soshiki") || "{}");
+    let installedSourceIdList: string[] = soshikiJson.installedMangaSources?.[$page.params.platform] ?? [];
     let doneInstallingResolver: () => void;
     let doneInstalling = new Promise<void>(res => doneInstallingResolver = res);
     let doneLinkingResolver: () => void;
@@ -100,7 +101,6 @@
         linkMangaPopup = true;
         linkedManga.push({...currentlyLinking, id});
         unlinkedManga = unlinkedManga.filter(obj => obj !== currentlyLinking);
-        currentlyLinking = undefined;
         e.preventDefault();
         await fetch(`${manifest.api.url}/link/manga/${$page.params.platform}/${currentlyLinking.sourceId}/${encodeURIComponent(currentlyLinking.manga.id)}/${id}`, {
             method: "POST",
@@ -108,6 +108,7 @@
                 Authorization: `Bearer ${Cookie.get("access")}`
             }
         });
+        currentlyLinking = undefined;
     }
 
     let mounted = false;

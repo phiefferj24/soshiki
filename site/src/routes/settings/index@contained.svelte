@@ -17,7 +17,7 @@
                     <div class="list-item">
                         <span class="list-item-title">{mangaPlatform.charAt(0).toUpperCase() + mangaPlatform.substring(1)}</span>
                         <span class="list-item-button" on:click={async () => {
-                            await goto(`/account/import/${mangaPlatform}`);
+                            await goto(`/settings/import/${mangaPlatform}`);
                         }}>Import</span>
                     </div>
                 {/if}

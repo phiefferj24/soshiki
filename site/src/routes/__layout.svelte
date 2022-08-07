@@ -9,7 +9,7 @@
     import { goto } from '$app/navigation';
     import LoadingBar from '$lib/LoadingBar.svelte';
     import * as Sources from '$lib/sources';
-import type { Medium } from 'soshiki-types';
+    import type { Medium } from 'soshiki-types';
     let mounted = false;
     async function init() {
         await Sources.init();
@@ -39,12 +39,16 @@ import type { Medium } from 'soshiki-types';
     onMount(init);
 
     let fullscreen = false;
+    let selector = false;
     const isMedium = (medium: string) => medium === "anime" || medium === "novel" || medium === "manga";
     page.subscribe(val => {
         fullscreen = val.url.searchParams.get("fullscreen") === "true";
         if (isMedium(val.url.pathname.substring(1, 6))) { 
             currentMedium.set(val.url.pathname.substring(1, 6) as Medium) 
-        } 
+            selector = true;
+        } else {
+            selector = false;
+        }
     })
 </script>
 
@@ -58,7 +62,7 @@ import type { Medium } from 'soshiki-types';
     <slot />
     {#if !fullscreen}
         <div style="height: 3rem; width: 100%;"></div>
-        <Footer/>
+        <Footer bind:selector />
     {/if}
 {:else}
     <LoadingBar />

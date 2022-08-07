@@ -163,11 +163,11 @@
                 <div class="info-header-statuses">
                     <div class="info-header-status">
                         <div class="info-header-status-chip" style:background-color={info.info.mal ? "green" : "red"}></div>
-                        <a href={info.info.mal ? `https://myanimelist.net/manga/${info.info.mal.id}` : ""} class="info-header-status">MAL</a>
+                        <a href={info.info.mal ? `https://myanimelist.net/manga/${info.info.mal.id}` : ""} target="_blank" class="info-header-status">MAL</a>
                     </div>
                     <div class="info-header-status">
                         <div class="info-header-status-chip" style:background-color={info.info.anilist ? "green" : "red"}></div>
-                        <a href={info.info.anilist ? `https://anilist.co/manga/${info.info.anilist.id}`: ""} class="info-header-status">ANILIST</a>
+                        <a href={info.info.anilist ? `https://anilist.co/manga/${info.info.anilist.id}`: ""} target="_blank" class="info-header-status">ANILIST</a>
                     </div>
                     {#if library}
                         {@const includes = library.includes($page.params.id)}

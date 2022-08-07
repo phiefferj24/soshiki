@@ -3,7 +3,7 @@
     import { currentMedium } from '$lib/stores'
     import { goto } from '$app/navigation'
     import { page } from '$app/stores'
-    import { browser } from '$app/env'
+    export let selector;
     let dropdownContent: HTMLElement;
     let dropdownToggle: HTMLElement;
     let dropped = false;
@@ -31,17 +31,19 @@
 
 <div class="footer">
     <div class="footer-row dropdown">
-        <i class="f7-icons dropdown-item-glyph">{types[typeIndex].icon}</i>
-        <span class="dropdown-item-span">{types[typeIndex].name}</span>
-        <i class="f7-icons dropdown-toggle footer-medium-glyph" bind:this={dropdownToggle} on:click={() => dropped = !dropped}>{dropped ? "chevron_down" : "chevron_up"}</i>
-        <div class="dropdown-content" class:dropdown-content-hidden={!dropped} bind:this={dropdownContent}>
-            {#each types as type, index} 
-                <div class="dropdown-item" on:click={() => {dropped = false; typeIndex = index; $currentMedium = type.type; mediumChanged()}}>
-                    <i class="f7-icons dropdown-item-glyph">{type.icon}</i>
-                    <span class="dropdown-item-span">{type.name}</span>
-                </div>
-            {/each}
-        </div>
+        {#if selector}
+            <i class="f7-icons dropdown-item-glyph">{types[typeIndex].icon}</i>
+            <span class="dropdown-item-span">{types[typeIndex].name}</span>
+            <i class="f7-icons dropdown-toggle footer-medium-glyph" bind:this={dropdownToggle} on:click={() => dropped = !dropped}>{dropped ? "chevron_down" : "chevron_up"}</i>
+            <div class="dropdown-content" class:dropdown-content-hidden={!dropped} bind:this={dropdownContent}>
+                {#each types as type, index} 
+                    <div class="dropdown-item" on:click={() => {dropped = false; typeIndex = index; $currentMedium = type.type; mediumChanged()}}>
+                        <i class="f7-icons dropdown-item-glyph">{type.icon}</i>
+                        <span class="dropdown-item-span">{type.name}</span>
+                    </div>
+                {/each}
+            </div>
+        {/if}
     </div>
     <div class="footer-row">
         <a href="https://discord.gg/EZWxGRv4Eh" class="footer-link" target="_blank">
