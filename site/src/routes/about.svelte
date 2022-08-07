@@ -23,6 +23,16 @@
         </span>
     </div>
     <div class="about-section">
+        <span class="about-section-heading">Data Storage</span>
+        <span class="about-section-paragraph">
+            Soshiki, by default, forces you to login to your discord account.<br/>
+            This is so that we are able to authenticate logins more safely than our own solution.<br/>
+            Soshiki stores your reading history, current library, and user info like connected accounts in its database.<br/>
+            Sensitive information, like access tokens, can only be accessed by the server itself.<br/>
+            You can configure visibility of all account aspects in the <a href="/account" class="about-hyperlink">account settings</a> page.
+        </span>
+    </div>
+    <div class="about-section">
         <span class="about-section-heading">Contact Us</span>
         <span class="about-section-paragraph">
             For suggestions, email <a href="mailto:suggestions@soshiki.moe" class="about-email">suggestions@soshiki.moe</a><br/>
