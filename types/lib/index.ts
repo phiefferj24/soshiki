@@ -60,6 +60,7 @@ export enum Status {
 }
 
 export enum TrackerStatus {
+    unknown,
     planned,
     ongoing,
     completed,

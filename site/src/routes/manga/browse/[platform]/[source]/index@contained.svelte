@@ -8,12 +8,9 @@
     import ListingCard from "$lib/listing/ListingCard.svelte";
     import manifest from "$lib/manifest";
     import LoadingBar from "$lib/LoadingBar.svelte";
-    import { FilterBase } from "soshiki-packages/manga/aidoku-ts/models/filter";
-    import Filter from "$lib/search/Filter.svelte";
-    let medium = $page.params.medium;
     let sourceId = $page.params.source;
     let platform = $page.params.platform;
-    let source = Sources.sources[medium][platform].find(s => s.id === sourceId) as MangaSource.MangaSource;
+    let source = Sources.sources.manga[platform].find(s => s.id === sourceId) as MangaSource.MangaSource;
     let mounted = false;
     let currentPage = 1;
     let gettingMore = false;
@@ -78,7 +75,7 @@
                         title={manga.title || ""}
                         subtitle={manga.author || ""}
                         cover={url}
-                        href={`/${medium}/browse/${platform}/${sourceId}/id/${encodeURIComponent(manga.id)}/info`}
+                        href={`/manga/browse/${platform}/${sourceId}/id/${encodeURIComponent(manga.id)}/info`}
                     />
                 {/await}
             </div>

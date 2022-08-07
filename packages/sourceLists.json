@@ -1,8 +1,5 @@
 {
     "manga": {
-        "aidoku": [
-            "https://skittyblock.github.io/aidoku-community-sources/index.json"
-        ],
         "paperback": [
             "https://thenetsky.github.io/extensions-mangastream/0.6",
             "https://thenetsky.github.io/extensions-sources/primary",

@@ -15,10 +15,9 @@
     let results: any[] = [];
     let info: MangaSource.Manga
     async function init() {
-        let medium = $page.params.medium;
         let sourceId = $page.params.source;
         let platform = $page.params.platform;
-        source = Sources.sources[medium][platform].find(s => s.id === sourceId) as MangaSource.MangaSource;
+        source = Sources.sources.manga[platform].find(s => s.id === sourceId) as MangaSource.MangaSource;
         info = await source.getMangaDetails(decodeURIComponent($page.params.id));
         searchText = info.title;
         cachedSearchText = searchText;
@@ -30,7 +29,7 @@
     let searchText = "";
     async function getResults() {
         cachedSearchText = searchText;
-        results = await fetch(`${manifest.api.url}/info/${$page.params.medium}/search/${encodeURIComponent(searchText)}`).then(res => res.json());
+        results = await fetch(`${manifest.api.url}/info/manga/search/${encodeURIComponent(searchText)}`).then(res => res.json());
     }
     async function link(e: Event) {
         e.preventDefault();
@@ -41,13 +40,13 @@
             el = el.parentElement;
         }
         if(id) {
-            await fetch(`${manifest.api.url}/link/${$page.params.medium}/${$page.params.platform}/${$page.params.source}/${encodeURIComponent($page.params.id)}/${id}`, {
+            await fetch(`${manifest.api.url}/link/manga/${$page.params.platform}/${$page.params.source}/${encodeURIComponent($page.params.id)}/${id}`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${Cookie.get("access")}`
                 }
             });
-            await goto("./info");
+            await goto(`/manga/${id}/info`, { replaceState: true });
         } else {
             console.error("No id found");
         }

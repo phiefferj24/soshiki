@@ -1,13 +1,15 @@
 <script lang="ts">
     import 'framework7-icons/css/framework7-icons.css';
-    import Header from "$lib/Header.svelte"
+    import Header from '$lib/Header.svelte';
+    import Footer from '$lib/Footer.svelte';
     import { page } from '$app/stores';
     import { onMount } from 'svelte';
-    import { user } from '$lib/stores';
+    import { currentMedium, user } from '$lib/stores';
     import Cookie from 'js-cookie';
     import { goto } from '$app/navigation';
     import LoadingBar from '$lib/LoadingBar.svelte';
     import * as Sources from '$lib/sources';
+import type { Medium } from 'soshiki-types';
     let mounted = false;
     async function init() {
         await Sources.init();
@@ -37,7 +39,13 @@
     onMount(init);
 
     let fullscreen = false;
-    page.subscribe(val => fullscreen = val.url.searchParams.get("fullscreen") === "true");
+    const isMedium = (medium: string) => medium === "anime" || medium === "novel" || medium === "manga";
+    page.subscribe(val => {
+        fullscreen = val.url.searchParams.get("fullscreen") === "true";
+        if (isMedium(val.url.pathname.substring(1, 6))) { 
+            currentMedium.set(val.url.pathname.substring(1, 6) as Medium) 
+        } 
+    })
 </script>
 
 <svelte:head>
@@ -48,6 +56,10 @@
         <Header />
     {/if}
     <slot />
+    {#if !fullscreen}
+        <div style="height: 3rem; width: 100%;"></div>
+        <Footer/>
+    {/if}
 {:else}
     <LoadingBar />
 {/if}

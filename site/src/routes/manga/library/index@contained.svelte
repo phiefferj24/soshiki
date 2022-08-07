@@ -10,7 +10,7 @@
     let library: string[] = [];
 
     async function init() {
-        let res = await fetch(`${manifest.api.url}/library/${$page.params.medium}`, {
+        let res = await fetch(`${manifest.api.url}/library/manga`, {
             headers: { Authorization: `Bearer ${Cookie.get("access")}` }
         });
         library = await res.json();
@@ -19,7 +19,7 @@
     onMount(init);
 
     async function getItem(id: string) {
-        return await fetch(`${manifest.api.url}/info/${$page.params.medium}/${id}`).then(res => res.json());
+        return await fetch(`${manifest.api.url}/info/manga/${id}`).then(res => res.json());
     }
 </script>
 
@@ -56,7 +56,7 @@
                             item.info.alternative_titles?.[0] ||
                             ""
                         } 
-                        href={`/${$page.params.medium}/${item.id}/info`}
+                        href={`/manga/${item.id}/info`}
                     />
                 </div>
             {/await}

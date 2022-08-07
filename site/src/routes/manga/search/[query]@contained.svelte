@@ -1,6 +1,5 @@
 <script lang="ts">
     import { page } from "$app/stores";
-    import { currentMedium } from "$lib/stores";
     import { goto } from "$app/navigation";
     import manifest from "$lib/manifest";
     import ListingCard from "$lib/listing/ListingCard.svelte";
@@ -10,11 +9,11 @@
     $: savedQuery = $page.params.query, updateResults();
     let results: any;
     function updateResults() {
-        results = fetch(`${manifest.api.url}/info/${$currentMedium}/search/${query}`)
+        results = fetch(`${manifest.api.url}/info/manga/search/${query}`)
             .then(res => res.json());
     }
     async function submit() {
-        await goto(`/${$currentMedium}/search/${query}`);
+        await goto(`/manga/search/${query}`);
     }
 </script>
 
@@ -40,7 +39,7 @@
                         cover={result.info.cover} 
                         title={result.info.title} 
                         subtitle={result.info.author} 
-                        href={`/${$currentMedium}/${result.id}/info`}
+                        href={`/manga/${result.id}/info`}
                     />
                 </div>
             {/each}

@@ -9,14 +9,10 @@
 
     let fullscreen = $page.url.searchParams.get("fullscreen") === "true";
     let mounted = false;
-    let medium = $page.params.medium;
     let sourceId = $page.params.source;
     let platform = $page.params.platform;
-    let source = Sources.sources[medium][platform].find(s => s.id === sourceId) as MangaSource.MangaSource;
+    let source = Sources.sources.manga[platform].find(s => s.id === sourceId) as MangaSource.MangaSource;
     async function init() {
-        if($page.params.medium === "anime") {
-            await goto($page.url.toString().replace(/\/read\/([^/]*)/, "/watch/$1"));
-        }
         mounted = true;
     }
     onMount(init);
