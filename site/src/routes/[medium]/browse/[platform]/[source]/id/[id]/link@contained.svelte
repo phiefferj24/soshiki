@@ -8,7 +8,7 @@
     import * as Sources from "$lib/sources"
     import type * as MangaSource from "soshiki-packages/manga/mangaSource";
     import Cookie from "js-cookie";
-import LoadingBar from "$lib/LoadingBar.svelte";
+    import LoadingBar from "$lib/LoadingBar.svelte";
 
     let source: MangaSource.MangaSource;
     let mounted = false;

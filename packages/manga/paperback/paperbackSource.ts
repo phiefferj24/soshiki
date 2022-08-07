@@ -2,6 +2,7 @@ import { Manga, MangaPageResult, MangaChapter, MangaPage, type MangaSource, Mang
 import * as Source from "../../source";
 import cheerio from "cheerio"
 import * as PB from 'paperback-extensions-common'
+import Cookie from 'js-cookie'
 
 export default class PaperbackSource implements MangaSource {
     name: string;
@@ -161,6 +162,67 @@ export default class PaperbackSource implements MangaSource {
             return new Request(`${request.url}${(request.url.includes("?") ? "&" : "?") + "soshiki_set_header=referer%3A"}`, {
                 body: request.body,
                 method: request.method
+            });
+        }
+    }
+
+    // copied most of this from nmn's paperback-to-aidoku
+    static async importBackup(buffer: ArrayBuffer, installSourcesCallback: (sourceIds: string[]) => Promise<string[]>, linkMangaCallback: (manga: {manga: Manga, sourceId: string}[]) => Promise<{id: string, manga: Manga, sourceId: string}[]>): Promise<void> {
+        let str = new TextDecoder().decode(buffer);
+        let json = JSON.parse(str);
+
+        let ids: string[] = [];
+        let sourceIds: string[] = [];
+        let manga: {manga: Manga, sourceId: string}[] = []; // mangaid, sourceid
+        for (const item of json.library) {
+            ids.push(item.manga.id);
+        }
+
+        for (const item of json.sourceMangas) {
+            if (!ids.includes(item.manga.id)) continue;
+            if (!sourceIds.includes(item.sourceId)) sourceIds.push(item.sourceId);
+            manga.push({manga: {
+                id: item.mangaId,
+                title: item.manga.titles[0],
+                author: item.manga.author,
+                artist: item.manga.artist,
+                cover: item.manga.image
+            }, sourceId: item.sourceId});
+        }
+
+        await installSourcesCallback(sourceIds);
+
+        let linkedManga = await linkMangaCallback(manga);
+
+        for (const item of linkedManga) {
+            await fetch(`https://api.soshiki.moe/library/manga/${item.id}`, {
+                method: "PUT",
+                headers: { Authorization: `Bearer ${Cookie.get("access")}` }
+            });
+        }
+
+        let history: {id: string, page: number, chapter: number}[] = [];
+
+        for (const item of json.chapterMarkers) {
+            if (!item.chapter) continue;
+            if (linkedManga.findIndex(obj => obj.manga.id === item.chapter.mangaId) === -1) continue;
+            history.push({id: linkedManga.find(obj => obj.manga.id === item.chapter.mangaId).id, page: item.lastPage, chapter: item.chapter.chapNum});
+        }
+
+        history = history.filter(obj => history.findIndex(obj2 => obj2.chapter > obj.chapter) === -1);
+
+        for (const item of history) {
+            await fetch(`https://api.soshiki.moe/history/manga/${item.id}`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${Cookie.get("access")}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    page: item.page,
+                    chapter: item.chapter,
+                    trackers: ["mal", "anilist"]
+                })
             });
         }
     }

@@ -32,7 +32,6 @@
         @media (prefers-color-scheme: dark) {
             border-color: $dropdown-border-color-dark;
         }
-
         &-header {
             display: flex;
             justify-content: space-between;

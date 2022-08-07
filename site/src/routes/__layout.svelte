@@ -81,7 +81,7 @@
     * {
         box-sizing: border-box;
     }
-    button, input[type="submit"], input[type="reset"] {
+    button, input[type="submit"], input[type="reset"], input[type="file"] {
         background: none;
         color: inherit;
         border: none;

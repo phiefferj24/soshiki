@@ -8,7 +8,7 @@ export enum MangaSourceType {
     paperback = 'paperback'
 }
 
-let mangaSourceClasses = {
+export let mangaSourceClasses = {
     aidoku: AidokuSource,
     paperback: PaperbackSource
 }

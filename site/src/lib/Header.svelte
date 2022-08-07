@@ -57,8 +57,12 @@
                     <span class="dropdown-item-span">Profile</span>
                 </a>
                 <a href="/account" class="dropdown-item" on:click={() => dropped = false}>
-                    <i class="f7-icons dropdown-item-glyph">gear_alt_fill</i>
+                    <i class="f7-icons dropdown-item-glyph">lock_fill</i>
                     <span class="dropdown-item-span">Account</span>
+                </a>
+                <a href="/settings" class="dropdown-item" on:click={() => dropped = false}>
+                    <i class="f7-icons dropdown-item-glyph">gear_alt_fill</i>
+                    <span class="dropdown-item-span">Settings</span>
                 </a>
             {:else}
                 <a href="https://api.soshiki.moe/user/login/discord/redirect" class="dropdown-item" on:click={() => dropped = false}>

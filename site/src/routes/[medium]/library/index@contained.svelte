@@ -33,9 +33,29 @@
             {#await getItem(item) then item}
                 <div class="item">
                     <ListingCard 
-                        cover={item.info.cover} 
-                        title={item.info.title} 
-                        subtitle={item.info.author} 
+                        cover={
+                            item.info.anilist?.coverImage?.large || 
+                            item.info.anilist?.coverImage?.medium ||
+                            item.info.anilist?.coverImage?.small ||
+                            item.info.anilist?.coverImage?.color ||
+                            item.info.mal?.main_picture?.large ||
+                            item.info.mal?.main_picture?.medium ||
+                            item.info.cover ||
+                            ""
+                        } 
+                        title={
+                            item.info.anilist?.title?.english ||
+                            item.info.mal?.alternative_titles?.en ||
+                            item.info.title ||
+                            ""
+                        } 
+                        subtitle={
+                            item.info.anilist?.title?.romaji ||
+                            item.info.anilist?.title?.native ||
+                            item.info.mal?.alternative_titles?.ja ||
+                            item.info.alternative_titles?.[0] ||
+                            ""
+                        } 
                         href={`/${$page.params.medium}/${item.id}/info`}
                     />
                 </div>
