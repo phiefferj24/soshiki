@@ -19,14 +19,16 @@
     let installSourcesPopup = false;
     let linkMangaPopup = false;
     let sourceIdList: string[];
+    $: { if (sourceIdList && sourceIdList.length === 0) doneInstallingResolver?.() }
     let externalSources: ExternalMangaSource[] = [];
     let soshikiJson = JSON.parse(localStorage.getItem("soshiki") || "{}");
-    let installedSourceIdList: string[] = soshikiJson.installedMangaSources?.[$page.params.platform] ?? [];
+    let installedSourceIdList: string[] = soshikiJson.installedMangaSources?.[$page.params.platform]?.map(obj => obj.id) ?? [];
     let doneInstallingResolver: () => void;
-    let doneInstalling = new Promise<void>(res => doneInstallingResolver = res);
+    let doneInstalling: Promise<void>;
     let doneLinkingResolver: () => void;
-    let doneLinking = new Promise<void>(res => doneLinkingResolver = res);
+    let doneLinking: Promise<void>;
     let unlinkedManga: {manga: Manga, sourceId: string}[];
+    $: { if (unlinkedManga && unlinkedManga.length === 0) doneLinkingResolver?.() }
     let linkedManga: {id: string, manga: Manga, sourceId: string}[] = [];
 
     let files: FileList;
@@ -35,6 +37,7 @@
     let completed: Promise<void>;
 
     async function installSourcesCallback(sourceIds: string[]): Promise<string[]> {
+        doneInstalling = new Promise<void>(res => doneInstallingResolver = res);
         overlay = true;
         installSourcesPopup = true;
         sourceIdList = sourceIds.filter(id => !installedSourceIdList.includes(id));
@@ -53,6 +56,7 @@
     }
 
     async function linkMangaCallback(manga: {manga: Manga, sourceId: string}[]): Promise<{id: string, manga: Manga, sourceId: string}[]> {
+        doneLinking = new Promise<void>(res => doneLinkingResolver = res);
         for (let i = 0; i < manga.length; i++) {
             let item = manga[i];
             let res = await fetch(`${manifest.api.url}/link/manga/${$page.params.platform}/${item.sourceId}/${encodeURIComponent(item.manga.id)}`);

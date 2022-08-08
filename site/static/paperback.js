@@ -14479,7 +14479,7 @@
                       });
                   }
               }
-              let headerString = Object.keys(headers ?? {}).length === 0 ? "" : (typeof request.param === 'undefined' ? "?" : "&");
+            let headerString = Object.keys(headers ?? {}).length === 0 ? "" : ((typeof request.param === 'undefined' && !`${request.url}`.includes('?')) ? "?" : "&");
               for (let header of Object.keys(headers ?? {})) {
                 if(headerString.length !== 1) headerString += "&";
                 headerString += "soshiki_set_header=";

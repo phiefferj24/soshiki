@@ -42,9 +42,10 @@ export default class PaperbackSource implements MangaSource {
     }
     async getFilters(): Promise<Source.Filter[]> {
         let tagSections = await this.source.getSearchTags?.() ?? [];
-        let filters: Source.Filter[] = tagSections.map(tagSection => new Source.MultiSelectFilter(tagSection.label, tagSection.tags.map(tag => tag.label), true, tagSection.tags.map(tag => tag.id)));
-        filters.push(new Source.SingleSelectFilter("Include Operator", ["AND", "OR"], false));
-        filters.push(new Source.SingleSelectFilter("Exclude Operator", ["AND", "OR"], false));
+        let canExclude = (await this.source.supportsTagExclusion?.()) ?? false;
+        let filters: Source.Filter[] = tagSections.map(tagSection => new Source.MultiSelectFilter(tagSection.label, tagSection.tags.map(tag => tag.label), canExclude, tagSection.tags.map(tag => tag.id)));
+        if ((await this.source.supportsSearchOperators?.()) ?? false) filters.push(new Source.SingleSelectFilter("Include Operator", ["AND", "OR"], false));
+        if ((await this.source.supportsSearchOperators?.()) ?? false) filters.push(new Source.SingleSelectFilter("Exclude Operator", ["AND", "OR"], false));
         return filters;
     }
     async getMangaList(filters: Source.Filter[], page: number): Promise<MangaPageResult> {
@@ -194,22 +195,33 @@ export default class PaperbackSource implements MangaSource {
 
         let linkedManga = await linkMangaCallback(manga);
 
+        let res = await fetch(`https://api.soshiki.moe/library/manga`, {
+            headers: { Authorization: `Bearer ${Cookie.get("access")}` }
+        });
+        let library = await res.json();
+
         for (const item of linkedManga) {
-            await fetch(`https://api.soshiki.moe/library/manga/${item.id}`, {
-                method: "PUT",
-                headers: { Authorization: `Bearer ${Cookie.get("access")}` }
-            });
+            if (!library.includes(item.id)) {
+                await fetch(`https://api.soshiki.moe/library/manga/${item.id}`, {
+                    method: "PUT",
+                    headers: { Authorization: `Bearer ${Cookie.get("access")}` }
+                });
+            }
         }
 
         let history: {id: string, page: number, chapter: number}[] = [];
 
         for (const item of json.chapterMarkers) {
-            if (!item.chapter) continue;
+            if (typeof item.chapter === 'undefined' || typeof item.chapter.chapNum === 'undefined' || typeof item.lastPage === 'undefined') continue;
             if (linkedManga.findIndex(obj => obj.manga.id === item.chapter.mangaId) === -1) continue;
-            history.push({id: linkedManga.find(obj => obj.manga.id === item.chapter.mangaId).id, page: item.lastPage, chapter: item.chapter.chapNum});
+            let mangaObject = linkedManga.find(obj => obj.manga.id === item.chapter.mangaId);
+            let oldIndex = history.findIndex(obj => obj.id === mangaObject.id);
+            if (oldIndex === -1) history.push({id: mangaObject.id, page: item.lastPage, chapter: item.chapter.chapNum});
+            else if (history[oldIndex].chapter < item.chapter.chapNum) {
+                history.splice(oldIndex, 1);
+                history.push({id: mangaObject.id, page: item.lastPage, chapter: item.chapter.chapNum});
+            }
         }
-
-        history = history.filter(obj => history.findIndex(obj2 => obj2.chapter > obj.chapter) === -1);
 
         for (const item of history) {
             await fetch(`https://api.soshiki.moe/history/manga/${item.id}`, {

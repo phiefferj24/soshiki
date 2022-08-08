@@ -369,12 +369,12 @@
         &-row {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start;
+            gap: 1rem;
             @media only screen and (max-width: 640px) {
                 flex-direction: column;
                 align-items: flex-start;
                 justify-content: flex-start;
-                gap: 0.5rem;
                 margin-bottom: 0.5rem;
             }
         }
