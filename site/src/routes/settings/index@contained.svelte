@@ -3,30 +3,23 @@
     import List from "$lib/List.svelte";
     import LoadingBar from "$lib/LoadingBar.svelte";
     import { mangaSourceClasses, MangaSourceType } from "soshiki-packages/manga/mangaSource";
-
-
-   let mounted = true;
 </script>
 
-{#if mounted}
-    <h1>Settings</h1>
-    <div class="lists">
-        <List title="Import Backup" collapsing={true}>
-            {#each Object.keys(MangaSourceType) as mangaPlatform}
-                {#if typeof mangaSourceClasses[mangaPlatform]["importBackup"] !== "undefined"}
-                    <div class="list-item">
-                        <span class="list-item-title">{mangaPlatform.charAt(0).toUpperCase() + mangaPlatform.substring(1)}</span>
-                        <span class="list-item-button" on:click={async () => {
-                            await goto(`/settings/import/${mangaPlatform}`);
-                        }}>Import</span>
-                    </div>
-                {/if}
-            {/each}
-        </List>
-    </div>
-{:else}
-    <LoadingBar />
-{/if}
+<h1>Settings</h1>
+<div class="lists">
+    <List title="Import Backup" collapsing={true}>
+        {#each Object.keys(MangaSourceType) as mangaPlatform}
+            {#if typeof mangaSourceClasses[mangaPlatform]["importBackup"] !== "undefined"}
+                <div class="list-item">
+                    <span class="list-item-title">{mangaPlatform.charAt(0).toUpperCase() + mangaPlatform.substring(1)}</span>
+                    <span class="list-item-button" on:click={async () => {
+                        await goto(`/settings/import/${mangaPlatform}`);
+                    }}>Import</span>
+                </div>
+            {/if}
+        {/each}
+    </List>
+</div>
 
 <style lang="scss">
     @use "../../styles/global.scss" as *;

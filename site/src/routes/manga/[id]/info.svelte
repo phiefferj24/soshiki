@@ -2,7 +2,6 @@
     import { page } from "$app/stores";
     import Cookie from 'js-cookie';
     import manifest from "$lib/manifest";
-    import { onMount } from "svelte";
     import List from "$lib/List.svelte";
     import type { MangaChapter } from "soshiki-packages/manga/mangaSource";
     import { sources } from "$lib/sources";
@@ -10,75 +9,67 @@
     import Dropdown from "$lib/Dropdown.svelte";
     import { TrackerStatus } from "soshiki-types";
     import Stars from "$lib/Stars.svelte";
-    let id = $page.params.id;
-    let info: any;
+
+    let info = $page.stuff.info;
     let headerTextHeight = 0;
     let headerImageHeight = 0;
-    let mounted = false;
-    let chaptersGot: Promise<void>;
     let chapters: MangaChapter[] = [];
-    let historyGot: Promise<void>;
     let history: {chapter?: number, page?: number, status?: TrackerStatus, rating?: number};
     let library: string[];
-    async function init() {
-        info = await fetch(`${manifest.api.url}/info/manga/${id}`, {
-            headers: {
-                Authorization: `Bearer ${Cookie.get("access")}`
-            }
-        }).then(res => res.json());
-        chaptersGot = (async () => {
-            let ids = info.source_ids;
-            let reqs: Promise<MangaChapter[]>[] = [];
-            for (let platform of Object.keys(info.source_ids)) {
-                if (!sources.manga[platform]) continue;
-                for (let source of sources.manga[platform]) {
-                    if (ids[platform][source.id]) {
-                        reqs.push(source.getMangaChapters(decodeURIComponent(ids[platform][source.id].id)).then(res => {
-                            res["sourceName"] = source.name;
-                            res["sourceId"] = source.id;
-                            res["platform"] = platform;
-                            return res;
-                        }));
-                    }
+    let chaptersGot = (async () => {
+        let ids = info.source_ids;
+        let reqs: Promise<MangaChapter[]>[] = [];
+        for (let platform of Object.keys(info.source_ids)) {
+            if (!sources.manga[platform]) continue;
+            for (let source of sources.manga[platform]) {
+                if (ids[platform][source.id]) {
+                    reqs.push(source.getMangaChapters(decodeURIComponent(ids[platform][source.id].id)).then(res => {
+                        res["sourceName"] = source.name;
+                        res["sourceId"] = source.id;
+                        res["platform"] = platform;
+                        return res;
+                    }));
                 }
             }
-            let double = await Promise.all(reqs);
-            let reduced: MangaChapter[] = [];
-            for (let single of double) {
-                for (let chap of single) {
-                    if (reduced.findIndex(c => chap.chapter === c.chapter) === -1) {
-                        chap["sourceName"] = single["sourceName"];
-                        chap["sourceId"] = single["sourceId"];
-                        chap["platform"] = single["platform"];
-                        chap["completed"] = false;
-                        reduced.push(chap);
-                    }
+        }
+        let double = await Promise.all(reqs);
+        let reduced: MangaChapter[] = [];
+        for (let single of double) {
+            for (let chap of single) {
+                if (reduced.findIndex(c => chap.chapter === c.chapter) === -1) {
+                    chap["sourceName"] = single["sourceName"];
+                    chap["sourceId"] = single["sourceId"];
+                    chap["platform"] = single["platform"];
+                    chap["completed"] = false;
+                    reduced.push(chap);
                 }
             }
-            chapters = reduced.filter((chapter, index) => reduced.findIndex(c => chapter.chapter === c.chapter) === index);
-        })();
-        historyGot = (async () => {
-            await chaptersGot;
-            let res = await fetch(`${manifest.api.url}/history/manga/${$page.params.id}`, {
-                headers: { Authorization: `Bearer ${Cookie.get("access")}` }
-            });
-            let json = await res.json();
-            chapters.forEach(chapter => {
-                if (typeof json["chapter"] === "number") {
-                    if (chapter.chapter < json["chapter"]) chapter["completed"] = true;
-                    else if (chapter.chapter === json["chapter"] && typeof json["page"] === "number") chapter["pageOn"] = json["page"];
-                }
-            });
-            chapters = chapters;
-            history =  { chapter: json["chapter"], page: json["page"], status: json["status"] as TrackerStatus, rating: json["rating"] };
-        })();
-
-        fetch(`${manifest.api.url}/library/manga`, {
+        }
+        chapters = reduced.filter((chapter, index) => reduced.findIndex(c => chapter.chapter === c.chapter) === index);
+    })();
+    let historyGot = (async () => {
+        await chaptersGot;
+        let res = await fetch(`${manifest.api.url}/history/manga/${$page.params.id}`, {
             headers: { Authorization: `Bearer ${Cookie.get("access")}` }
-        }).then(res => res.json()).then(json => library = json);
-        mounted = true;
-    }
-    onMount(init);
+        });
+        let json = await res.json();
+        chapters.forEach(chapter => {
+            if (typeof json["chapter"] === "number") {
+                if (chapter.chapter < json["chapter"]) chapter["completed"] = true;
+                else if (chapter.chapter === json["chapter"] && typeof json["page"] === "number") chapter["pageOn"] = json["page"];
+            }
+        });
+        chapters = chapters;
+        history =  { chapter: json["chapter"], page: json["page"], status: json["status"] as TrackerStatus, rating: json["rating"] };
+    })();
+
+    fetch(`${manifest.api.url}/library/manga`, {
+        headers: { Authorization: `Bearer ${Cookie.get("access")}` }
+    }).then(res => res.json()).then(json => library = json);
+
+    fetch(`${manifest.api.url}/info/manga/${$page.params.id}`, {
+        headers: { Authorization: `Bearer ${Cookie.get("access")}` }
+    }).then(res => res.json()).then(json => info = json);
 
     async function setStatus(status: number) {
         await fetch(`${manifest.api.url}/history/manga/${$page.params.id}`, {
@@ -123,118 +114,110 @@
     }
 </script>
 
-<svelte:head>
-    {#if mounted}
-        <title>{info.info.title} - Soshiki</title> 
-    {/if}
-</svelte:head>
-
-{#if mounted}
-    <div class="info-header" style:--banner="url({info.info.anilist?.bannerImage || ""})">
-        <div class="info-header-gradient"></div>
-    </div>
-    <div class="container" style:--height="{window.screen.width <= 640 ? headerImageHeight / 4 : headerTextHeight}px">
-        <div class="info-header-content">
-            <div class="info-header-cover" style:--cover="url({
-                info.info.anilist?.coverImage?.large || 
-                info.info.anilist?.coverImage?.medium ||
-                info.info.anilist?.coverImage?.small ||
-                info.info.anilist?.coverImage?.color ||
-                info.info.mal?.main_picture?.large ||
-                info.info.mal?.main_picture?.medium ||
-                info.info.cover ||
-                ""
-                })" bind:clientHeight={headerImageHeight}>
-            </div>
-            <div class="info-header-titles" bind:clientHeight={headerTextHeight}>
-                <span class="info-header-title">{
-                    info.info.anilist?.title?.english ||
-                    info.info.mal?.alternative_titles?.en ||
-                    info.info.title ||
-                    ""
-                }</span>
-                <span class="info-header-subtitle">{
-                    info.info.anilist?.title?.romaji ||
-                    info.info.anilist?.title?.native ||
-                    info.info.mal?.alternative_titles?.ja ||
-                    info.info.alternative_titles?.[0] ||
-                    ""
-                }</span>
-                <div class="info-header-statuses">
-                    <div class="info-header-status">
-                        <div class="info-header-status-chip" style:background-color={info.info.mal ? "green" : "red"}></div>
-                        <a href={info.info.mal ? `https://myanimelist.net/manga/${info.info.mal.id}` : ""} target="_blank" class="info-header-status">MAL</a>
-                    </div>
-                    <div class="info-header-status">
-                        <div class="info-header-status-chip" style:background-color={info.info.anilist ? "green" : "red"}></div>
-                        <a href={info.info.anilist ? `https://anilist.co/manga/${info.info.anilist.id}`: ""} target="_blank" class="info-header-status">ANILIST</a>
-                    </div>
-                    {#if library}
-                        {@const includes = library.includes($page.params.id)}
-                        <div class="info-header-library" on:click={() => setLibrary(!includes)}>
-                            <i class="f7-icons info-header-library-glyph">{includes ? "bookmark_fill" : "bookmark"}</i>
-                            <span class="info-header-library-span">{includes ? "REMOVE FROM LIBRARY" : "ADD TO LIBRARY"}</span>
-                        </div>
-                    {/if}
-                </div>
-                {#if history}
-                    <div class="info-header-row">
-                        <Dropdown bind:dropped={statusDropped} label={"Status"} title={Object.keys(TrackerStatus).filter(v => isNaN(Number(v)))[history.status ?? 0].toString().charAt(0).toUpperCase() + Object.keys(TrackerStatus).filter(v => isNaN(Number(v)))[history.status ?? 0].toString().substring(1)}>
-                            {#each Object.keys(TrackerStatus).filter(v => isNaN(Number(v))).filter(v => v !== "unknown") as status}
-                                <span class="info-header-dropdown-span" on:click={() => setStatus(TrackerStatus[status])}>{status.toString().charAt(0).toUpperCase() + status.toString().substring(1)}</span>
-                            {/each}
-                        </Dropdown>
-                        <div class="info-header-rating">
-                            <span class="info-header-rating-label">Rating</span>
-                            <Stars score={history.rating} onChange={score => setScore(score)} />
-                        </div>
-                    </div>
-                    {#if chapters.length > 0}
-                        {@const index = chapters.findIndex(c => c.chapter === history.chapter)}
-                        {#if typeof history.chapter === "number" && index !== -1}
-                            <a href="./read/{index}?page={history.page ?? 0}" class="info-header-continue">
-                                <span class="info-header-continue-title">Continue Reading {typeof chapters[index].volume !== "undefined" ? `Volume ${chapters[index].volume} ` : ""}Chapter {chapters[index].chapter}{chapters[index].title ? ` - ${chapters[index].title}` : ""}</span>
-                            </a>
-                        {:else}
-                            <a href="./read/{chapters.length - 1}" class="info-header-continue">
-                                <span class="info-header-continue-title">Begin Reading {typeof chapters[chapters.length - 1].volume !== "undefined" ? `Volume ${chapters[chapters.length - 1].volume} ` : ""}Chapter {chapters[chapters.length - 1].chapter}{chapters[chapters.length - 1].title ? ` - ${chapters[chapters.length - 1].title}` : ""}</span>
-                            </a>
-                        {/if}
-                    {/if}
-                {/if}
-            </div>
+<div class="info-header" style:--banner="url({info.info.anilist?.bannerImage || ""})">
+    <div class="info-header-gradient"></div>
+</div>
+<div class="container" style:--height="{window.screen.width <= 640 ? headerImageHeight / 4 : headerTextHeight}px">
+    <div class="info-header-content">
+        <div class="info-header-cover" style:--cover="url({
+            info.info.anilist?.coverImage?.large || 
+            info.info.anilist?.coverImage?.medium ||
+            info.info.anilist?.coverImage?.small ||
+            info.info.anilist?.coverImage?.color ||
+            info.info.mal?.main_picture?.large ||
+            info.info.mal?.main_picture?.medium ||
+            info.info.cover ||
+            ""
+            })" bind:clientHeight={headerImageHeight}>
         </div>
-        <div class="info-body-content">
-            <div class="info-body-content-genres">
-                {#if info.info.anilist?.genres}
-                    {#each info.info.anilist.genres as genre}
-                        <span class="info-body-content-genre">{genre}</span>
-                    {/each}
-                {:else if info.info.mal?.genres}
-                    {#each info.info.mal.genres as genre}
-                        <span class="info-body-content-genre">{genre.name}</span>
-                    {/each}
-                {/if}
-            </div>
-            <span class="info-body-content-description">{
-                @html info.info.anilist?.description?.replace(/<script.*?>.*?<\/script>/g, "") ||
-                info.info.mal?.synopsis ||
+        <div class="info-header-titles" bind:clientHeight={headerTextHeight}>
+            <span class="info-header-title">{
+                info.info.anilist?.title?.english ||
+                info.info.mal?.alternative_titles?.en ||
+                info.info.title ||
                 ""
             }</span>
-        </div>
-        <div class="info-chapters">
-            <List title="Chapters" subtitle={`${chapters.length}`}> 
-                {#each chapters as chapter, index}
-                    <a class="chapter-list-item" href="./read/{index}">
-                        <span class="chapter-list-item-title" class:chapter-list-item-title-completed={chapter["completed"] === true}>{(chapter.volume !== null && typeof chapter.volume !== "undefined") ? `Volume ${chapter.volume} ` : ""}Chapter {chapter.chapter} {chapter.title ? `- ${chapter.title}` : ""}</span>
-                        <span class="chapter-list-item-subtitle">{chapter["sourceName"]} - {chapter["platform"].charAt(0).toUpperCase() + chapter["platform"].substring(1)}{typeof chapter["pageOn"] === "undefined" ? "" : ` - Page ${chapter["pageOn"]}`}</span>
-                        <span class="chapter-list-item-subtitle">{chapter.scanlator ? `${chapter.scanlator} ${chapter.date ? "- " : ""}` : ""}{chapter.date ? `Released ${DateTime.fromJSDate(chapter.date).toRelative()}` : ""}</span>
-                    </a>
-                {/each}
-            </List>
+            <span class="info-header-subtitle">{
+                info.info.anilist?.title?.romaji ||
+                info.info.anilist?.title?.native ||
+                info.info.mal?.alternative_titles?.ja ||
+                info.info.alternative_titles?.[0] ||
+                ""
+            }</span>
+            <div class="info-header-statuses">
+                <div class="info-header-status">
+                    <div class="info-header-status-chip" style:background-color={info.info.mal ? "green" : "red"}></div>
+                    <a href={info.info.mal ? `https://myanimelist.net/manga/${info.info.mal.id}` : ""} target="_blank" class="info-header-status">MAL</a>
+                </div>
+                <div class="info-header-status">
+                    <div class="info-header-status-chip" style:background-color={info.info.anilist ? "green" : "red"}></div>
+                    <a href={info.info.anilist ? `https://anilist.co/manga/${info.info.anilist.id}`: ""} target="_blank" class="info-header-status">ANILIST</a>
+                </div>
+                {#if library}
+                    {@const includes = library.includes($page.params.id)}
+                    <div class="info-header-library" on:click={() => setLibrary(!includes)}>
+                        <i class="f7-icons info-header-library-glyph">{includes ? "bookmark_fill" : "bookmark"}</i>
+                        <span class="info-header-library-span">{includes ? "REMOVE FROM LIBRARY" : "ADD TO LIBRARY"}</span>
+                    </div>
+                {/if}
+            </div>
+            {#if history}
+                <div class="info-header-row">
+                    <Dropdown bind:dropped={statusDropped} label={"Status"} title={Object.keys(TrackerStatus).filter(v => isNaN(Number(v)))[history.status ?? 0].toString().charAt(0).toUpperCase() + Object.keys(TrackerStatus).filter(v => isNaN(Number(v)))[history.status ?? 0].toString().substring(1)}>
+                        {#each Object.keys(TrackerStatus).filter(v => isNaN(Number(v))).filter(v => v !== "unknown") as status}
+                            <span class="info-header-dropdown-span" on:click={() => setStatus(TrackerStatus[status])}>{status.toString().charAt(0).toUpperCase() + status.toString().substring(1)}</span>
+                        {/each}
+                    </Dropdown>
+                    <div class="info-header-rating">
+                        <span class="info-header-rating-label">Rating</span>
+                        <Stars score={history.rating} onChange={score => setScore(score)} />
+                    </div>
+                </div>
+                {#if chapters.length > 0}
+                    {@const index = chapters.findIndex(c => c.chapter === history.chapter)}
+                    {#if typeof history.chapter === "number" && index !== -1}
+                        <a href="./read/{index}?page={history.page ?? 0}" class="info-header-continue">
+                            <span class="info-header-continue-title">Continue Reading {typeof chapters[index].volume !== "undefined" ? `Volume ${chapters[index].volume} ` : ""}Chapter {chapters[index].chapter}{chapters[index].title ? ` - ${chapters[index].title}` : ""}</span>
+                        </a>
+                    {:else}
+                        <a href="./read/{chapters.length - 1}" class="info-header-continue">
+                            <span class="info-header-continue-title">Begin Reading {typeof chapters[chapters.length - 1].volume !== "undefined" ? `Volume ${chapters[chapters.length - 1].volume} ` : ""}Chapter {chapters[chapters.length - 1].chapter}{chapters[chapters.length - 1].title ? ` - ${chapters[chapters.length - 1].title}` : ""}</span>
+                        </a>
+                    {/if}
+                {/if}
+            {/if}
         </div>
     </div>
-{/if}
+    <div class="info-body-content">
+        <div class="info-body-content-genres">
+            {#if info.info.anilist?.genres}
+                {#each info.info.anilist.genres as genre}
+                    <span class="info-body-content-genre">{genre}</span>
+                {/each}
+            {:else if info.info.mal?.genres}
+                {#each info.info.mal.genres as genre}
+                    <span class="info-body-content-genre">{genre.name}</span>
+                {/each}
+            {/if}
+        </div>
+        <span class="info-body-content-description">{
+            @html info.info.anilist?.description?.replace(/<script.*?>.*?<\/script>/g, "") ||
+            info.info.mal?.synopsis ||
+            ""
+        }</span>
+    </div>
+    <div class="info-chapters">
+        <List title="Chapters" subtitle={`${chapters.length}`}> 
+            {#each chapters as chapter, index}
+                <a class="chapter-list-item" href="./read/{index}">
+                    <span class="chapter-list-item-title" class:chapter-list-item-title-completed={chapter["completed"] === true}>{(chapter.volume !== null && typeof chapter.volume !== "undefined") ? `Volume ${chapter.volume} ` : ""}Chapter {chapter.chapter} {chapter.title ? `- ${chapter.title}` : ""}</span>
+                    <span class="chapter-list-item-subtitle">{chapter["sourceName"]} - {chapter["platform"].charAt(0).toUpperCase() + chapter["platform"].substring(1)}{typeof chapter["pageOn"] === "undefined" ? "" : ` - Page ${chapter["pageOn"]}`}</span>
+                    <span class="chapter-list-item-subtitle">{chapter.scanlator ? `${chapter.scanlator} ${chapter.date ? "- " : ""}` : ""}{chapter.date ? `Released ${DateTime.fromJSDate(chapter.date).toRelative()}` : ""}</span>
+                </a>
+            {/each}
+        </List>
+    </div>
+</div>
 
 <style lang="scss">
     @use "../../../styles/global.scss" as *;
