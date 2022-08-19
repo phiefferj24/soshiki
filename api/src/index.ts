@@ -7,6 +7,7 @@ import Discord from 'soshiki-discord';
 import crypto from 'crypto';
 import MAL, * as MALTypes from './mal';
 import AniList, * as AniListTypes from './anilist';
+import Cookie from 'cookie';
 
 dotenv.config();
 
@@ -83,10 +84,17 @@ const verify = async (req: any, res: any, next: any) => {
 }
 
 function getToken(req: any) {
+    console.log(req.headers)
     if(req.headers.authorization) {
         const [type, token] = req.headers.authorization.split(' ');
         if(type === 'Bearer') {
             return decodeURIComponent(token);
+        }
+    } 
+    if (req.headers.cookie) {
+        const access = Cookie.parse(req.headers.cookie).access;
+        if(access) {
+            return decodeURIComponent(access);
         }
     }
     return null;
@@ -443,6 +451,7 @@ app.get("/library/:medium", async (req, res) => {
     let userId = await database.getUserId(getToken(req));
     if(!userId) {
         res.status(403).send("Unauthorized")
+        return
     }
     let json = await database.getUser(userId);
     if (!json.data["library"]) json.data["library"] = {};
@@ -455,6 +464,7 @@ app.put("/library/:medium/:id", async (req, res) => {
     let userId = await database.getUserId(getToken(req));
     if(!userId) {
         res.status(403).send("Unauthorized")
+        return
     }
     let json = await database.getUser(userId);
     if (!json.data["library"]) json.data["library"] = {};
@@ -469,6 +479,7 @@ app.delete("/library/:medium/:id", async (req, res) => {
     let userId = await database.getUserId(getToken(req));
     if(!userId) {
         res.status(403).send("Unauthorized")
+        return
     }
     let json = await database.getUser(userId);
     if (!json.data["library"]) json.data["library"] = [];
@@ -482,6 +493,7 @@ app.get("/history/:medium", async (req, res) => {
     let userId = await database.getUserId(getToken(req));
     if(!userId) {
         res.status(403).send("Unauthorized")
+        return
     }
     let json = await database.getUser(userId);
     if (!json.data["history"]) json.data["history"] = {};
@@ -493,6 +505,7 @@ app.get("/history/:medium/:id", async (req, res) => {
     let userId = await database.getUserId(getToken(req));
     if(!userId) {
         res.status(403).send("Unauthorized")
+        return
     }
     let json = await database.getUser(userId);
     if (!json.data["history"]) json.data["history"] = {};
@@ -505,6 +518,7 @@ app.post("/history/:medium/:id", async (req, res) => {
     let userId = await database.getUserId(getToken(req));
     if(!userId) {
         res.status(403).send("Unauthorized")
+        return
     }
     let data = req.body;
     let json = await database.getUser(userId);
@@ -595,6 +609,7 @@ app.delete("/history/:medium/:id", async (req, res) => {
     let userId = await database.getUserId(getToken(req));
     if(!userId) {
         res.status(403).send("Unauthorized")
+        return
     }
     let data = req.body;
     let json = await database.getUser(userId);
@@ -628,10 +643,6 @@ app.delete("/history/:medium/:id", async (req, res) => {
     json.data["history"][req.params.medium] = history;
     await database.setUserData(userId, "history", json.data["history"]);
     res.status(200).send()
-});
-
-app.post("/", (req, res) => {
-    res.status(200).send("Niceu");
 });
 
 app.listen(manifest.api.port, async () => {

@@ -11,13 +11,6 @@ const config = {
 	kit: {
 		adapter: adapter(),
 		vite: {
-			css: {
-                preprocessorOptions: {
-                    scss: {
-                        additionalData: `@use "src/styles/global.scss" as *;`
-                    }
-				},
-			},
 			server: {
 				host: true
 			}

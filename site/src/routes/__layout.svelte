@@ -10,6 +10,7 @@
     import LoadingBar from '$lib/LoadingBar.svelte';
     import * as Sources from '$lib/sources';
     import type { Medium } from 'soshiki-types';
+
     let mounted = false;
     async function init() {
         await Sources.init();
@@ -17,13 +18,13 @@
         let refresh = Cookie.get("refresh");
         let id = Cookie.get("id");
         if (access && id) {
-            setUser(id);
+            await setUser(id);
         } else if (id && refresh) {
             let res = await fetch(`https://api.soshiki.moe/user/login/refresh?refresh=${refresh}`);
             let data = await res.json();
             Cookie.set("access", data.access, { expires: new Date(Date.now() + data.expires) });
             Cookie.set("refresh", data.refresh, { expires: new Date(Date.now() + data.expires * 2) });
-            setUser(data.id);
+            await setUser(data.id);
         } else if ($page.url.pathname !== "/account/redirect") {
             await goto("https://api.soshiki.moe/user/login/discord/redirect", { replaceState: true });
         }
@@ -54,6 +55,14 @@
 
 <svelte:head>
     <title>{$page.url.pathname.split('/').length > 2 ? $page.url.pathname.split('/')[2].replace(/.?/, m => m.toUpperCase()) + ' - ' : ''}Soshiki</title>
+    <meta property="og:url" content={$page.url.toString()}>
+    <meta property="og:site_name" content="Soshiki">
+    <meta property="twitter:card" content="summary_large_image">
+    {#if $page.stuff.head}
+        <meta property="og:title" content={$page.stuff.head.title ?? ""}>
+        <meta property="og:description" content={$page.stuff.head.description ?? ""}>
+        <meta property="og:image" content={$page.stuff.head.image ?? ""}>\
+    {/if}
 </svelte:head>
 {#if mounted}
     {#if !fullscreen}
