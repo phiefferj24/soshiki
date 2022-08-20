@@ -84,7 +84,6 @@ const verify = async (req: any, res: any, next: any) => {
 }
 
 function getToken(req: any) {
-    console.log(req.headers)
     if(req.headers.authorization) {
         const [type, token] = req.headers.authorization.split(' ');
         if(type === 'Bearer') {
@@ -455,7 +454,7 @@ app.get("/library/:medium", async (req, res) => {
     }
     let json = await database.getUser(userId);
     if (!json.data["library"]) json.data["library"] = {};
-    if (!json.data["library"][req.params.medium]) json.data["library"][req.params.medium] = [];
+    if (!json.data["library"][req.params.medium]) json.data["library"][req.params.medium] = {};
     res.status(200).send(json.data["library"][req.params.medium]);
 });
 
@@ -467,9 +466,69 @@ app.put("/library/:medium/:id", async (req, res) => {
         return
     }
     let json = await database.getUser(userId);
+    let category = req.body.category ?? "";
     if (!json.data["library"]) json.data["library"] = {};
-    if (!json.data["library"][req.params.medium]) json.data["library"][req.params.medium] = [];
-    if (!json.data["library"][req.params.medium].includes(req.params.id)) json.data["library"][req.params.medium].push(req.params.id);
+    if (!json.data["library"][req.params.medium]) json.data["library"][req.params.medium] = {};
+    let found = false
+    for (let key of Object.keys(json.data["library"][req.params.medium])) {
+        if (json.data["library"][req.params.medium][key].includes(req.params.id)) found = true;
+    }
+    if (!found) {
+        if (!json.data["library"][req.params.medium][category]) json.data["library"][req.params.medium][category] = [];
+        json.data["library"][req.params.medium][category].push(req.params.id);
+    }
+    await database.setUserData(userId, "library", json.data["library"]);
+    res.status(200).send();
+});
+
+app.put("/library/:medium/category/:category", async (req, res) => {
+    if(!isMedium(req.params.medium)) res.status(400).send("Invalid medium");
+    let userId = await database.getUserId(getToken(req));
+    if(!userId) {
+        res.status(403).send("Unauthorized")
+        return
+    }
+    let json = await database.getUser(userId);
+    if (!json.data["library"]) json.data["library"] = {};
+    if (!json.data["library"][req.params.medium]) json.data["library"][req.params.medium] = {};
+    if (!Object.keys(json.data["library"][req.params.medium]).includes(req.params.category)) json.data["library"][req.params.medium][req.params.category] = [];
+    await database.setUserData(userId, "library", json.data["library"]);
+    res.status(200).send();
+});
+
+app.delete("/library/:medium/category/:category", async (req, res) => {
+    if(!isMedium(req.params.medium)) res.status(400).send("Invalid medium");
+    let userId = await database.getUserId(getToken(req));
+    if(!userId) {
+        res.status(403).send("Unauthorized")
+        return
+    }
+    let json = await database.getUser(userId);
+    if (!json.data["library"]) json.data["library"] = {};
+    if (!json.data["library"][req.params.medium]) json.data["library"][req.params.medium] = {};
+    if (!Object.keys(json.data["library"][req.params.medium]).includes(req.params.category)) delete json.data["library"][req.params.medium][req.params.category];
+    await database.setUserData(userId, "library", json.data["library"]);
+    res.status(200).send();
+});
+
+app.patch("/library/:medium/:id", async (req, res) => {
+    if(!isMedium(req.params.medium)) res.status(400).send("Invalid medium");
+    let userId = await database.getUserId(getToken(req));
+    if(!userId) {
+        res.status(403).send("Unauthorized")
+        return
+    }
+    let json = await database.getUser(userId);
+    let category = req.body.category ?? "";
+    if (!json.data["library"]) json.data["library"] = {};
+    if (!json.data["library"][req.params.medium]) json.data["library"][req.params.medium] = {};
+    for (let key of Object.keys(json.data["library"][req.params.medium])) {
+        if (json.data["library"][req.params.medium][key].includes(req.params.id)) {
+            json.data["library"][req.params.medium][key].splice(json.data["library"][req.params.medium].indexOf(req.params.id), 1);
+        }
+    }
+    if (!json.data["library"][req.params.medium][category]) json.data["library"][req.params.medium][category] = [];
+    json.data["library"][req.params.medium][category].push(req.params.id);
     await database.setUserData(userId, "library", json.data["library"]);
     res.status(200).send();
 });
@@ -483,8 +542,12 @@ app.delete("/library/:medium/:id", async (req, res) => {
     }
     let json = await database.getUser(userId);
     if (!json.data["library"]) json.data["library"] = [];
-    if (!json.data["library"][req.params.medium]) json.data["library"][req.params.medium] = [];
-    if (!json.data["library"][req.params.medium].includes(req.params.id)) json.data["library"][req.params.medium].splice(json.data["library"][req.params.medium].indexOf(req.params.id), 1);
+    if (!json.data["library"][req.params.medium]) json.data["library"][req.params.medium] = {};
+    for (let key of Object.keys(json.data["library"][req.params.medium])) {
+        if (json.data["library"][req.params.medium][key].includes(req.params.id)) {
+            json.data["library"][req.params.medium][key].splice(json.data["library"][req.params.medium].indexOf(req.params.id), 1);
+        }
+    }
     await database.setUserData(userId, "library", json.data["library"]);
     res.status(200).send();
 });
@@ -530,21 +593,29 @@ app.post("/history/:medium/:id", async (req, res) => {
         let entry = {
             id: req.params.id,
             startTime: Date.now(),
-            page: data.page ?? 0,
             status: data.status as TrackerStatus ?? TrackerStatus.ongoing,
-            lastReadTime: Date.now(),
+            lastTime: Date.now(),
             rating: data.rating ?? 0,
         }
-        if (req.params.medium === "anime") entry["episode"] = data.episode ?? 0;
-        else entry["chapter"] = data.chapter ?? 0;
+        if (req.params.medium === "anime") {
+            entry["episode"] = data.episode ?? 0;
+            entry["timestamp"] = data.timestamp ?? 0;
+        }
+        else {
+            entry["chapter"] = data.chapter ?? 0;
+            entry["page"] = data.page ?? 0;
+        }
         history.push(entry);
         entryIndex = history.length - 1;
     } else {
         let entry = history[entryIndex];
         if (typeof data.chapter === "number") entry.chapter = data.chapter;
         if (typeof data.page === "number") entry.page = data.page;
+        if (typeof data.episode === "number") entry.episode = data.episode;
+        if (typeof data.timestamp === "number") entry.timestamp = data.timestamp;
         if (typeof data.rating === "number") entry.rating = data.rating;
-        entry.lastReadTime = Date.now();
+        if (typeof data.status === "number") entry.status = data.status;
+        entry.lastTime = Date.now();
         history[entryIndex] = entry;
     }
     if (data.trackers) {

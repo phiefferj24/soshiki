@@ -1,6 +1,8 @@
-import { readable, writable } from "svelte/store"
+import { readable, writable, type Writable } from "svelte/store"
 import type { Medium } from "soshiki-types"
 import { browser } from "$app/env"
+import LocalTracker from "./trackers/local"
+import type { Tracker } from "soshiki-types"
 
 export const isDarkMode = readable(null, (set) => {
     const media = window.matchMedia("(prefers-color-scheme: dark)")
@@ -23,3 +25,5 @@ currentMedium.subscribe((medium) => {
 
 
 export const user = writable(null)
+
+export const tracker: Writable<Tracker> = writable(new LocalTracker())

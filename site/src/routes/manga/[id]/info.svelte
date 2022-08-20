@@ -1,7 +1,6 @@
 <script lang="ts">
     import { page } from "$app/stores";
     import Cookie from 'js-cookie';
-    import manifest from "$lib/manifest";
     import List from "$lib/List.svelte";
     import type { MangaChapter } from "soshiki-packages/manga/mangaSource";
     import { sources } from "$lib/sources";
@@ -9,13 +8,14 @@
     import Dropdown from "$lib/Dropdown.svelte";
     import { TrackerStatus } from "soshiki-types";
     import Stars from "$lib/Stars.svelte";
+    import { tracker } from "$lib/stores";
 
     let info = $page.stuff.info;
     let headerTextHeight = 0;
     let headerImageHeight = 0;
     let chapters: MangaChapter[] = [];
     let history: {chapter?: number, page?: number, status?: TrackerStatus, rating?: number};
-    let library: string[];
+    let library: {[category: string]: string[]};
     let chaptersGot = (async () => {
         let ids = info.source_ids;
         let reqs: Promise<MangaChapter[]>[] = [];
@@ -49,10 +49,7 @@
     })();
     let historyGot = (async () => {
         await chaptersGot;
-        let res = await fetch(`${manifest.api.url}/history/manga/${$page.params.id}`, {
-            headers: { Authorization: `Bearer ${Cookie.get("access")}` }
-        });
-        let json = await res.json();
+        let json = await $tracker.getHistoryItem("manga", $page.params.id);
         chapters.forEach(chapter => {
             if (typeof json["chapter"] === "number") {
                 if (chapter.chapter < json["chapter"]) chapter["completed"] = true;
@@ -60,56 +57,40 @@
             }
         });
         chapters = chapters;
-        history =  { chapter: json["chapter"], page: json["page"], status: json["status"] as TrackerStatus, rating: json["rating"] };
+        history = { chapter: json["chapter"], page: json["page"], status: json["status"] as TrackerStatus, rating: json["rating"] };
     })();
 
-    fetch(`${manifest.api.url}/library/manga`, {
-        headers: { Authorization: `Bearer ${Cookie.get("access")}` }
-    }).then(res => res.json()).then(json => library = json);
+    $tracker.getLibrary("manga").then(json => library = json);
 
-    fetch(`${manifest.api.url}/info/manga/${$page.params.id}`, {
+    fetch(`https://api.soshiki.moe/info/manga/${$page.params.id}`, {
         headers: { Authorization: `Bearer ${Cookie.get("access")}` }
     }).then(res => res.json()).then(json => info = json);
 
     async function setStatus(status: number) {
-        await fetch(`${manifest.api.url}/history/manga/${$page.params.id}`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${Cookie.get("access")}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                status: status,
-                trackers: ["mal", "anilist"]
-            })
-        });
+        await $tracker.updateHistoryItem("manga", $page.params.id, { status, trackers: ["mal", "anilist"] });
         history = { ...history, status: status };
         statusDropped = false;
     }
     let statusDropped = false;
 
     async function setScore(score: number) {
-        await fetch(`${manifest.api.url}/history/manga/${$page.params.id}`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${Cookie.get("access")}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                rating: score,
-                trackers: ["mal", "anilist"]
-            })
-        });
+        await $tracker.updateHistoryItem("manga", $page.params.id, { rating: score, trackers: ["mal", "anilist"] });
         history = { ...history, rating: score };
     }
 
     async function setLibrary(state: boolean) {
-        await fetch(`${manifest.api.url}/library/manga/${$page.params.id}`, {
-            method: state ? "PUT" : "DELETE",
-            headers: { Authorization: `Bearer ${Cookie.get("access")}` }
-        });
-        if (state) library.push($page.params.id);
-        else library.splice(library.indexOf($page.params.id), 1);
+        if (state) {
+            if (!library[""]) library[""] = [];
+            library[""].push($page.params.id);
+            await $tracker.addToLibrary("manga", $page.params.id, "");
+        }
+        else {
+            for (let category of Object.keys(library)) {
+                let index = library[category].findIndex(id => id === $page.params.id);
+                if (index !== -1) library[category].splice(index, 1);
+            }
+            await $tracker.removeFromLibrary("manga", $page.params.id);
+        }
         library = library;
     }
 </script>
@@ -154,7 +135,7 @@
                     <a href={info.info.anilist ? `https://anilist.co/manga/${info.info.anilist.id}`: ""} target="_blank" class="info-header-status">ANILIST</a>
                 </div>
                 {#if library}
-                    {@const includes = library.includes($page.params.id)}
+                    {@const includes = Object.keys(library).some(category => library[category].includes($page.params.id))}
                     <div class="info-header-library" on:click={() => setLibrary(!includes)}>
                         <i class="f7-icons info-header-library-glyph">{includes ? "bookmark_fill" : "bookmark"}</i>
                         <span class="info-header-library-span">{includes ? "REMOVE FROM LIBRARY" : "ADD TO LIBRARY"}</span>

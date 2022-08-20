@@ -1,56 +1,69 @@
 <script lang="ts">
-    import manifest from "$lib/manifest";
-    import { page } from "$app/stores"
     import ListingCard from "$lib/listing/ListingCard.svelte";
+    import { onMount } from "svelte";
+    import { tracker } from "$lib/stores";
+    import LoadingBar from "$lib/LoadingBar.svelte";
 
-    let library: string[] = $page.stuff.library
+    let library: {[category: string]: string[]};
 
     async function getItem(id: string) {
-        return await fetch(`${manifest.api.url}/info/manga/${id}`).then(res => res.json());
+        return await fetch(`https://api.soshiki.moe/info/manga/${id}`).then(res => res.json());
     }
+
+    let mounted = false;
+    async function init() {
+        library = await $tracker.getLibrary("manga");
+        mounted = true;
+    }
+    onMount(init);
 </script>
 
 <div class="heading">
     <span class="heading-title">Library</span>
     <span class="heading-count">{library.length}</span>
 </div>
-<div class="items">
-    {#each library as item}
-        {#await getItem(item) then item}
-            <div class="item">
-                <ListingCard 
-                    cover={
-                        item.info.anilist?.coverImage?.large || 
-                        item.info.anilist?.coverImage?.medium ||
-                        item.info.anilist?.coverImage?.small ||
-                        item.info.anilist?.coverImage?.color ||
-                        item.info.mal?.main_picture?.large ||
-                        item.info.mal?.main_picture?.medium ||
-                        item.info.cover ||
-                        ""
-                    } 
-                    title={
-                        item.info.anilist?.title?.english ||
-                        item.info.mal?.alternative_titles?.en ||
-                        item.info.title ||
-                        ""
-                    } 
-                    subtitle={
-                        item.info.anilist?.title?.romaji ||
-                        item.info.anilist?.title?.native ||
-                        item.info.mal?.alternative_titles?.ja ||
-                        item.info.alternative_titles?.[0] ||
-                        ""
-                    } 
-                    href={`/manga/${item.id}/info`}
-                />
-            </div>
-        {/await}
-    {/each}
-    {#each new Array(12 - library.length % 12) as _}
-        <div class="result"></div>
-    {/each}
-</div>
+
+{#if mounted}
+    <div class="items">
+        {#each library[""] ?? [] as item}
+            {#await getItem(item) then item}
+                <div class="item">
+                    <ListingCard 
+                        cover={
+                            item.info.anilist?.coverImage?.large || 
+                            item.info.anilist?.coverImage?.medium ||
+                            item.info.anilist?.coverImage?.small ||
+                            item.info.anilist?.coverImage?.color ||
+                            item.info.mal?.main_picture?.large ||
+                            item.info.mal?.main_picture?.medium ||
+                            item.info.cover ||
+                            ""
+                        } 
+                        title={
+                            item.info.anilist?.title?.english ||
+                            item.info.mal?.alternative_titles?.en ||
+                            item.info.title ||
+                            ""
+                        } 
+                        subtitle={
+                            item.info.anilist?.title?.romaji ||
+                            item.info.anilist?.title?.native ||
+                            item.info.mal?.alternative_titles?.ja ||
+                            item.info.alternative_titles?.[0] ||
+                            ""
+                        } 
+                        href={`/manga/${item.id}/info`}
+                    />
+                </div>
+            {/await}
+        {/each}
+        {#each new Array(12 - library[""].length % 12) as _}
+            <div class="result"></div>
+        {/each}
+    </div>
+{:else}
+    <LoadingBar />
+{/if}
 
 <style lang='scss'>
     @use "../../../styles/global.scss" as *;

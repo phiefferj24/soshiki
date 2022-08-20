@@ -49,7 +49,7 @@
         }
         let pb: { sourceMangas: any[], chapterMarkers: any[], library: any[] } = { sourceMangas: [], chapterMarkers: [], library: [] }
         for (const item of aidoku.library) {
-            pb.library.push({ manga: { id: item.sourceId + '\0' + item.mangaId } });
+            pb.library.push({ manga: { id: item.sourceId + '\0' + item.mangaId }, libraryTabs: [{ name: (item.categories && item.categories.length > 0) ? item.categories[0] : undefined }] });
         }
         for (const item of aidoku.manga) {
             if (typeof map[item.sourceId] === 'undefined') continue;
@@ -90,11 +90,11 @@ proper Aidoku source support is added in the future. Do not try to import this b
 It will not work. This is only so you can load your Aidoku data into Soshiki.
 <br/>
 Currently only supports:<br/>
-MangaDex<br/>
-MangaNato<br/>
-MangaSee<br/>
-MangaPill<br/>
-Readm
+ • MangaDex<br/>
+ • MangaNato<br/>
+ • MangaSee<br/>
+ • MangaPill<br/>
+ • Readm
 </p>
 
 

@@ -2,7 +2,7 @@ import { Manga, MangaPageResult, MangaChapter, MangaPage, type MangaSource, Mang
 import * as Source from "../../source";
 import cheerio from "cheerio"
 import * as PB from 'paperback-extensions-common'
-import Cookie from 'js-cookie'
+import { Tracker } from "soshiki-types";
 
 export default class PaperbackSource implements MangaSource {
     name: string;
@@ -168,13 +168,13 @@ export default class PaperbackSource implements MangaSource {
     }
 
     // copied most of this from nmn's paperback-to-aidoku
-    static async importBackup(buffer: ArrayBuffer, installSourcesCallback: (sourceIds: string[]) => Promise<string[]>, linkMangaCallback: (manga: {manga: Manga, sourceId: string}[]) => Promise<{id: string, manga: Manga, sourceId: string}[]>): Promise<void> {
+    static async importBackup(buffer: ArrayBuffer, tracker: Tracker, installSourcesCallback: (sourceIds: string[]) => Promise<string[]>, linkMangaCallback: (manga: {manga: Manga, sourceId: string, category?: string}[]) => Promise<{id: string, manga: Manga, sourceId: string, category?: string}[]>): Promise<void> {
         let str = new TextDecoder().decode(buffer);
         let json = JSON.parse(str);
 
         let ids: string[] = [];
         let sourceIds: string[] = [];
-        let manga: {manga: Manga, sourceId: string}[] = []; // mangaid, sourceid
+        let manga: {manga: Manga, sourceId: string, category?: string}[] = []; // mangaid, sourceid
         for (const item of json.library) {
             ids.push(item.manga.id);
         }
@@ -188,25 +188,24 @@ export default class PaperbackSource implements MangaSource {
                 author: item.manga.author,
                 artist: item.manga.artist,
                 cover: item.manga.image
-            }, sourceId: item.sourceId});
+            }, sourceId: item.sourceId, category: (item.libraryTabs && item.libraryTabs.length > 0) ? item.libraryTabs[0].name ?? undefined : undefined});
         }
 
         await installSourcesCallback(sourceIds);
 
         let linkedManga = await linkMangaCallback(manga);
 
-        let res = await fetch(`https://api.soshiki.moe/library/manga`, {
-            headers: { Authorization: `Bearer ${Cookie.get("access")}` }
-        });
-        let library = await res.json();
+        let library = await tracker.getLibrary("manga")
 
         for (const item of linkedManga) {
-            if (!library.includes(item.id)) {
-                await fetch(`https://api.soshiki.moe/library/manga/${item.id}`, {
-                    method: "PUT",
-                    headers: { Authorization: `Bearer ${Cookie.get("access")}` }
-                });
+            let includes = false;
+            for (let category of Object.keys(library)) {
+                if (library[category].includes(item.id)) {
+                    includes = true;
+                    break;
+                }
             }
+            if (!includes) await tracker.addToLibrary("manga", item.id, item.category ?? "");
         }
 
         let history: {id: string, page: number, chapter: number}[] = [];
@@ -224,17 +223,10 @@ export default class PaperbackSource implements MangaSource {
         }
 
         for (const item of history) {
-            await fetch(`https://api.soshiki.moe/history/manga/${item.id}`, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${Cookie.get("access")}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    page: item.page,
-                    chapter: item.chapter,
-                    trackers: ["mal", "anilist"]
-                })
+            await tracker.updateHistoryItem("manga", item.id, {
+                page: item.page,
+                chapter: item.chapter,
+                trackers: ["mal", "anilist"]
             });
         }
     }

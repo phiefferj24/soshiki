@@ -66,7 +66,43 @@ export enum TrackerStatus {
     completed,
     dropped,
     paused
-}   
+}  
+
+export type TrackerRequest = {
+    page?: number;
+    chapter?: number;
+    timestamp?: number;
+    episode?: number;
+    status?: TrackerStatus;
+    rating?: number;
+    trackers?: string[];
+}
+
+export type TrackerResponse = {
+    id?: string;
+    page?: number;
+    rating?: number;
+    status?: TrackerStatus;
+    chapter?: number;
+    episode?: number;
+    timestamp?: number;
+    startTime?: number;
+    lastTime?: number;
+    tracker_ids?: { [id: string]: number };
+}
+
+export interface Tracker {
+    updateHistoryItem(medium: Medium, id: string, request: TrackerRequest): Promise<void>;
+    getHistoryItem(medium: Medium, id: string): Promise<TrackerResponse>;
+    removeHistoryItem(medium: Medium, id: string): Promise<void>;
+    getHistory(medium: Medium): Promise<TrackerResponse[]>;
+    addToLibrary(medium: Medium, id: string, category: string): Promise<void>;
+    removeFromLibrary(medium: Medium, id: string): Promise<void>;
+    getLibrary(medium: Medium): Promise<{[category: string]: string[]}>;
+    setLibraryCategory(medium: Medium, id: string, category: string): Promise<void>;
+    addLibraryCategory(medium: Medium, category: string): Promise<void>;
+    removeLibraryCategory(medium: Medium, category: string): Promise<void>;
+}
 
 export type Character = {
     name: string,

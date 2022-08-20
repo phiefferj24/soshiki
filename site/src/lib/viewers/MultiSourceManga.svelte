@@ -8,8 +8,7 @@
     import List from "$lib/List.svelte";
     import Dropdown from "$lib/Dropdown.svelte";
     import Cookie from "js-cookie";
-    import { TrackerStatus } from "soshiki-types";
-import { get_root_for_style } from "svelte/internal";
+    import { tracker } from "$lib/stores";
 
     export let fullscreen: boolean;
     $: updateFullscreen(fullscreen);
@@ -333,17 +332,10 @@ import { get_root_for_style } from "svelte/internal";
         } else {    
             pagesDiv.style.overflowX = "scroll";
         }
-        await fetch(`https://api.soshiki.moe/history/manga/${$page.params.id}`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${Cookie.get("access")}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                page: 1,
-                chapter: chapters[chapterIndex].chapter,
-                trackers: ["mal", "anilist"]
-            })
+        await $tracker.updateHistoryItem("manga", $page.params.id, {
+            page: 1,
+            chapter: chapters[chapterIndex].chapter,
+            trackers: ["mal", "anilist"]
         });
         changingChapter = false;
     }
@@ -419,17 +411,10 @@ import { get_root_for_style } from "svelte/internal";
     async function exit() {
         if (exiting) return;
         exiting = true;
-        await fetch(`https://api.soshiki.moe/history/manga/${$page.params.id}`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${Cookie.get("access")}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                page: pageNum,
-                chapter: chapters[chapterIndex].chapter,
-                trackers: ["mal", "anilist"]
-            })
+        await $tracker.updateHistoryItem("manga", $page.params.id, {
+            page: pageNum,
+            chapter: chapters[chapterIndex].chapter,
+            trackers: ["mal", "anilist"]
         });
         await goto($page.url.toString().replace(/\/read\/([^/]*)/, "/info"));
     }
