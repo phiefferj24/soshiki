@@ -2,13 +2,14 @@
     import ListingCard from "$lib/listing/ListingCard.svelte";
     import { onMount } from "svelte";
     import { tracker } from "$lib/stores";
-    import LoadingBar from "$lib/LoadingBar.svelte";
+    import { page } from "$app/stores";
     import { goto } from "$app/navigation";
+    import LoadingBar from "$lib/LoadingBar.svelte";
     import Dropdown from "$lib/Dropdown.svelte";
     import List from "$lib/List.svelte";
 
     let library: {[category: string]: string[]};
-    let category = "";
+    let category = $page.params.category;
     $: categoryName = category === "" ? "All" : category;
 
     $: updateCategory(category);
@@ -25,7 +26,6 @@
     let mounted = false;
     async function init() {
         library = await $tracker.getLibrary("manga");
-        console.log(library)
         mounted = true;
     }
     onMount(init);
@@ -111,7 +111,7 @@
 
 
 <style lang='scss'>
-    @use "../../../styles/global.scss" as *;
+    @use "../../../../styles/global.scss" as *;
     .container {
         width: min(50rem, 100%);
         margin: 2rem auto;

@@ -10,6 +10,8 @@
     import LoadingBar from '$lib/LoadingBar.svelte';
     import * as Sources from '$lib/sources';
     import type { Medium } from 'soshiki-types';
+    import { tracker } from "$lib/stores";
+    import ServerTracker from '$lib/trackers/server';
 
     let mounted = false;
     async function init() {
@@ -19,6 +21,7 @@
         let id = Cookie.get("id");
         if (access && id) {
             await setUser(id);
+            $tracker = new ServerTracker();
         } else if (id && refresh) {
             let res = await fetch(`https://api.soshiki.moe/user/login/refresh?refresh=${refresh}`);
             let data = await res.json();
@@ -26,7 +29,7 @@
             Cookie.set("refresh", data.refresh, { expires: new Date(Date.now() + data.expires * 2) });
             await setUser(data.id);
         } else if ($page.url.pathname !== "/account/redirect") {
-            await goto("https://api.soshiki.moe/user/login/discord/redirect", { replaceState: true });
+            //await goto("https://api.soshiki.moe/user/login/discord/redirect", { replaceState: true });
         }
         mounted = true;
     }
@@ -61,7 +64,7 @@
     {#if $page.stuff.head}
         <meta property="og:title" content={$page.stuff.head.title ?? ""}>
         <meta property="og:description" content={$page.stuff.head.description ?? ""}>
-        <meta property="og:image" content={$page.stuff.head.image ?? ""}>\
+        <meta property="og:image" content={$page.stuff.head.image ?? ""}>
     {/if}
 </svelte:head>
 {#if mounted}
@@ -114,6 +117,12 @@
         font: inherit;
         cursor: pointer;
         outline: inherit;
+    }
+
+
+    [class*="-glyph"] {
+        font-size: 1.5rem;
+        user-select: none;
     }
 
     @media (prefers-color-scheme: dark) {

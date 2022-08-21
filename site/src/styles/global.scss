@@ -44,11 +44,6 @@
     src: url("/fonts/Inter/static/Inter-Black.ttf");
 }
 
-[class*="-glyph"] {
-    font-size: 1.5rem;
-    user-select: none;
-}
-
 //global variables
 $text-color-light: #333;
 $text-color-dark: #fff;

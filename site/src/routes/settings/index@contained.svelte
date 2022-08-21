@@ -1,7 +1,6 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import List from "$lib/List.svelte";
-    import LoadingBar from "$lib/LoadingBar.svelte";
     import { mangaSourceClasses, MangaSourceType } from "soshiki-packages/manga/mangaSource";
 </script>
 

@@ -3,7 +3,8 @@
     import { onMount } from "svelte";
     import { page } from "$app/stores";
     import Cookie from 'js-cookie';
-    import { user } from "$lib/stores";
+    import { user, tracker } from "$lib/stores";
+import ServerTracker from "$lib/trackers/server";
   
     onMount(async () => {
         let type = $page.url.searchParams.get("type");
@@ -27,14 +28,15 @@
     async function discord() {
         let id = $page.url.searchParams.get("id");
         if (id) {
-            Cookie.set("id", id, { expires: 365 });
             let access = $page.url.searchParams.get("access");
             let refresh = $page.url.searchParams.get("refresh");
             let expires = parseInt($page.url.searchParams.get("expires"));
             if (access && refresh && expires) {
+                Cookie.set("id", id, { expires: Date.now() + 365 * 24 * 60 * 60 * 1000 });
                 Cookie.set("access", access, { expires: new Date(Date.now() + expires) });
-                Cookie.set("refresh", refresh, { expires: new Date(Date.now() + expires * 2) });
-                user.set(await fetch(`https://api.soshiki.moe/user/${id}`).then(res => res.json()));
+                Cookie.set("refresh", refresh, { expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) });
+                $user = await fetch(`https://api.soshiki.moe/user/${id}`).then(res => res.json());
+                $tracker = new ServerTracker();
             }
         }
     }

@@ -16,6 +16,14 @@
     let chapters: MangaChapter[] = [];
     let history: {chapter?: number, page?: number, status?: TrackerStatus, rating?: number};
     let library: {[category: string]: string[]};
+    let category;
+    updateCategory(category);
+
+    async function updateCategory(cat: string) {
+        category = cat === "" ? "All" : cat;
+        $tracker.setLibraryCategory("manga", $page.params.id, category);
+    }
+
     let chaptersGot = (async () => {
         let ids = info.source_ids;
         let reqs: Promise<MangaChapter[]>[] = [];
@@ -60,7 +68,7 @@
         history = { chapter: json["chapter"], page: json["page"], status: json["status"] as TrackerStatus, rating: json["rating"] };
     })();
 
-    $tracker.getLibrary("manga").then(json => library = json);
+    $tracker.getLibrary("manga").then(json => library = json).then(() => updateCategory(Object.keys(library).find(key => library[key].includes($page.params.id)) ?? ""));
 
     fetch(`https://api.soshiki.moe/info/manga/${$page.params.id}`, {
         headers: { Authorization: `Bearer ${Cookie.get("access")}` }
@@ -142,6 +150,15 @@
                     </div>
                 {/if}
             </div>
+            {#if category}
+                <div class="info-header-row">
+                    <Dropdown label="Category" bind:title={category}>
+                        {#each Object.keys(library) as category}
+                            <span class="info-header-dropdown-span" on:click={() => updateCategory(category)}>{category === "" ? "All" : category}</span>
+                        {/each}
+                    </Dropdown>
+                </div>
+            {/if}
             {#if history}
                 <div class="info-header-row">
                     <Dropdown bind:dropped={statusDropped} label={"Status"} title={Object.keys(TrackerStatus).filter(v => isNaN(Number(v)))[history.status ?? 0].toString().charAt(0).toUpperCase() + Object.keys(TrackerStatus).filter(v => isNaN(Number(v)))[history.status ?? 0].toString().substring(1)}>

@@ -1,6 +1,8 @@
 <script lang=ts>
     import { page } from "$app/stores"
-    import { user } from "$lib/stores"
+    import { user, tracker } from "$lib/stores"
+    import Cookie from "js-cookie";
+    import LocalTracker from "./trackers/local";
     let dropdownContent: HTMLElement;
     let dropdownToggle: HTMLElement;
     let dropped = false;
@@ -16,9 +18,16 @@
             userImage = fetch(`https://api.soshiki.moe/user/${val.id}/avatar`).then(res => res.text());
         }
     });
+
+    let popup = true;
 </script>
 
 <svelte:body on:click={handleClick} />
+
+<div class="popup" class:popup-hidden={!popup}>
+    <i class="f7-icons popup-glyph" on:click={() => popup = false}>xmark</i>
+    <span class="popup-text">Join our discord! Tap the icon on the footer.</span>
+</div>
 
 <nav class="header">
     <div class="header-logo">
@@ -64,6 +73,18 @@
                     <i class="f7-icons dropdown-item-glyph">gear_alt_fill</i>
                     <span class="dropdown-item-span">Settings</span>
                 </a>
+                <div class="dropdown-item" on:click={() => {
+                    dropped = false;
+                    Cookie.remove("access");
+                    Cookie.remove("refresh");
+                    Cookie.remove("id");
+                    $tracker = new LocalTracker();
+                    $user = null;
+                    window.location.reload();
+                }}>
+                    <i class="f7-icons dropdown-item-glyph">person_crop_circle_fill_badge_xmark</i>
+                    <span class="dropdown-item-span">Logout</span>
+                </div>
             {:else}
                 <a href="https://api.soshiki.moe/user/login/discord/redirect" class="dropdown-item" on:click={() => dropped = false}>
                     <i class="f7-icons dropdown-item-glyph">person_crop_circle_fill</i>
@@ -223,6 +244,22 @@
         *[class*="-glyph"] {
             font-size: 1.125rem;
         }
+    }
+}
+
+.popup {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1rem;
+    padding: 0.5rem;
+    background-color: rgb(244, 246, 193);
+    color: black;
+    &-glyph {
+        cursor: pointer;
+    }
+    &-hidden {
+        display: none;
     }
 }
 </style>

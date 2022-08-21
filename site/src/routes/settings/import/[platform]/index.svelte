@@ -11,6 +11,7 @@
     import manifest from '$lib/manifest';
     import ListingRow from '$lib/listing/ListingRow.svelte';
     import Cookie from 'js-cookie';
+    import { tracker } from '$lib/stores';
 
     let fileInput: HTMLInputElement;
 
@@ -27,9 +28,9 @@
     let doneInstalling: Promise<void>;
     let doneLinkingResolver: () => void;
     let doneLinking: Promise<void>;
-    let unlinkedManga: {manga: Manga, sourceId: string}[];
+    let unlinkedManga: {manga: Manga, sourceId: string, category?: string}[];
     $: { if (unlinkedManga && unlinkedManga.length === 0) doneLinkingResolver?.() }
-    let linkedManga: {id: string, manga: Manga, sourceId: string}[] = [];
+    let linkedManga: {id: string, manga: Manga, sourceId: string, category?: string}[] = [];
 
     let files: FileList;
     $: file = files?.[0];
@@ -55,7 +56,7 @@
         installedSourceIdList.push(source.id);
     }
 
-    async function linkMangaCallback(manga: {manga: Manga, sourceId: string}[]): Promise<{id: string, manga: Manga, sourceId: string}[]> {
+    async function linkMangaCallback(manga: {manga: Manga, sourceId: string, category?: string}[]): Promise<{id: string, manga: Manga, sourceId: string, category?: string}[]> {
         doneLinking = new Promise<void>(res => doneLinkingResolver = res);
         for (let i = 0; i < manga.length; i++) {
             let item = manga[i];
@@ -144,7 +145,7 @@
         </div>
         {#if file}
             <span class="file-button-button" on:click|stopPropagation={() => {
-                completed = file.arrayBuffer().then(async buffer => await mangaSourceClasses[$page.params.platform].importBackup?.(buffer, installSourcesCallback, linkMangaCallback).then(() => files = undefined));
+                completed = file.arrayBuffer().then(async buffer => await mangaSourceClasses[$page.params.platform].importBackup?.(buffer, $tracker, installSourcesCallback, linkMangaCallback).then(() => files = undefined));
             }}>Import</span>
         {/if}
     </div>
