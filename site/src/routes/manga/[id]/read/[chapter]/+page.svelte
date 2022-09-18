@@ -9,7 +9,7 @@
     let fullscreen = $page.url.searchParams.get("fullscreen") === "true";
     let chapters: MangaSource.MangaChapter[];
     let sources: {[platform: string]: {[sourceId: string]: MangaSource.MangaSource}} = {};
-    let info = $page.stuff.info;
+    let info = $page.data.info;
     let mounted = false;
     async function init() {
         let ids = info.source_ids;

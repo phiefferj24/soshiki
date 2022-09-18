@@ -9,12 +9,7 @@ const config = {
 	preprocess: preprocess(),
 
 	kit: {
-		adapter: adapter(),
-		vite: {
-			server: {
-				host: true
-			}
-		}
+		adapter: adapter()
 	}
 };
 

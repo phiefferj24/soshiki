@@ -1,8 +1,5 @@
-import { json } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit'
 
-export async function GET({ url }) {
-    return json({}, {
-        status: 301,
-        headers: { Location: `${url.toString()}/info` }
-    });
+export async function load({ url }) {
+    throw redirect(301, `${url.toString()}/info`)
 }

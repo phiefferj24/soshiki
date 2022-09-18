@@ -61,10 +61,10 @@
     <meta property="og:url" content={$page.url.toString()}>
     <meta property="og:site_name" content="Soshiki">
     <meta property="twitter:card" content="summary_large_image">
-    {#if $page.stuff.head}
-        <meta property="og:title" content={$page.stuff.head.title ?? ""}>
-        <meta property="og:description" content={$page.stuff.head.description ?? ""}>
-        <meta property="og:image" content={$page.stuff.head.image ?? ""}>
+    {#if $page.data.head}
+        <meta property="og:title" content={$page.data.head.title ?? ""}>
+        <meta property="og:description" content={$page.data.head.description ?? ""}>
+        <meta property="og:image" content={$page.data.head.image ?? ""}>
     {/if}
 </svelte:head>
 {#if mounted}

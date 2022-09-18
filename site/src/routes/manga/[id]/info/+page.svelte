@@ -10,13 +10,13 @@
     import Stars from "$lib/Stars.svelte";
     import { tracker } from "$lib/stores";
 
-    let info = $page.stuff.info;
+    let info = $page.data.info;
     let headerTextHeight = 0;
     let headerImageHeight = 0;
     let chapters: MangaChapter[] = [];
     let history: {chapter?: number, page?: number, status?: TrackerStatus, rating?: number};
     let library: {[category: string]: string[]};
-    let category;
+    let category: string;
     updateCategory(category);
 
     async function updateCategory(cat: string) {
@@ -218,7 +218,7 @@
 </div>
 
 <style lang="scss">
-    @use "../../../styles/global.scss" as *;
+    @use "../../../../styles/global.scss" as *;
     .info-header {
         position: relative;
         display: flex;

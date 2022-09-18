@@ -14,7 +14,6 @@
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "next",
-		"@sveltejs/kit": "^1.0.0-next.350",
 		"@types/cookie": "^0.5.1",
 		"@types/js-cookie": "^3.0.2",
 		"@types/web": "^0.0.68",
@@ -34,11 +33,13 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@sveltejs/kit": "^1.0.0-next.484",
 		"bplist-parser": "^0.3.2",
 		"buffer": "^6.0.3",
 		"cookie": "^0.5.0",
 		"framework7-icons": "^5.0.5",
 		"js-cookie": "^3.0.1",
-		"svelte-meta-tags": "^2.6.1"
+		"svelte-meta-tags": "^2.6.1",
+		"vite": "^3.1.2"
 	}
 }
