@@ -1,12 +1,12 @@
 <script lang="ts">
     import { page } from "$app/stores";
     import { onMount } from 'svelte';
-    import manifest from "$lib/manifest";
     import * as Sources from "$lib/sources"
     import type * as MangaSource from "soshiki-packages/manga/mangaSource";
     import LoadingBar from "$lib/LoadingBar.svelte";
     import List from "$lib/List.svelte";
     import { DateTime } from "luxon";
+    import { proxy } from "$lib/stores";
     let sourceId = $page.params.source;
     let platform = $page.params.platform;
     let source = Sources.sources.manga[platform].find(s => s.id === sourceId) as MangaSource.MangaSource;
@@ -23,7 +23,7 @@
     onMount(init);
     let headerTextHeight = 0;
     async function updateLink() {
-        let res = await fetch(`${manifest.api.url}/link/manga/${platform}/${sourceId}/${encodeURIComponent($page.params.id)}`);
+        let res = await fetch(`https://api.soshiki.moe/link/manga/${platform}/${sourceId}/${encodeURIComponent($page.params.id)}`);
         let json = await res.json();
         if (!json || !json.id || json.id.length === 0) {
             link = null;
@@ -41,14 +41,14 @@
 </svelte:head>
 
 {#if mounted}
-    {#await source.modifyImageRequest(new Request(`${manifest.proxy.url}/${info.cover}` || "")).then(req => fetch(req)).then(res => res.blob()).then(blob => URL.createObjectURL(blob)) then url}
-        <div class="info-header" style:--banner="url({manifest.proxy.url}/{info.cover || ""})">
+    {#await source.modifyImageRequest(new Request(`${$proxy}/${info.cover}` || "")).then(req => fetch(req)).then(res => res.blob()).then(blob => URL.createObjectURL(blob)) then url}
+        <div class="info-header" style:--banner="url({$proxy}/{info.cover || ""})">
             <div class="info-header-gradient"></div>
         </div>
     {/await}
     <div class="container" style:--height="{headerTextHeight}px">
         <div class="info-header-content">
-            {#await source.modifyImageRequest(new Request(`${manifest.proxy.url}/${info.cover}` || "")).then(req => fetch(req)).then(res => res.blob()).then(blob => URL.createObjectURL(blob)) then url}
+            {#await source.modifyImageRequest(new Request(`${$proxy}/${info.cover}` || "")).then(req => fetch(req)).then(res => res.blob()).then(blob => URL.createObjectURL(blob)) then url}
                 <div class="info-header-cover" style:--cover="url({url})"></div>
             {/await}
             <div class="info-header-titles" bind:clientHeight={headerTextHeight}>
@@ -89,7 +89,7 @@
 {/if}
 
 <style lang="scss">
-    @use "../../../../../../../styles/global.scss" as *;
+    @use "../../../../../../../../styles/global.scss" as *;
     .chapter-list-item {
         padding: 0.5rem;
         display: flex;

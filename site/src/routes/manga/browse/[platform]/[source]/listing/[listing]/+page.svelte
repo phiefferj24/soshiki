@@ -6,9 +6,10 @@
     import { onMount } from "svelte";
     import SearchBar from "$lib/search/SearchBar.svelte";
     import ListingCard from "$lib/listing/ListingCard.svelte";
-    import manifest from "$lib/manifest";
     import LoadingBar from "$lib/LoadingBar.svelte";
     import { goto } from "$app/navigation";
+    import { proxy } from "$lib/stores";
+    import Container from '$lib/Container.svelte';
     let sourceId = $page.params.source;
     let platform = $page.params.platform;
     let source = Sources.sources.manga[platform].find(s => s.id === sourceId) as MangaSource.MangaSource;
@@ -48,28 +49,30 @@
 </script>
 
 {#if mounted}
-    <SearchBar placeholder="Search {source.name}" on:submit={updateMangaList} bind:value={searchText} listings={listings}/>
-    <div class="heading">
-        <a href="/manga/browse/{$page.params.platform}/{$page.params.source}"><i class="f7-icons heading-glyph">chevron_left</i></a>
-        <span class="heading-title">{listing.name}</span>
-    </div>
-    <div class="results">
-        {#each list as manga}
-            <div class="result">
-                <ListingCard 
-                    title={manga.title || ""}
-                    subtitle={manga.author || ""}
-                    cover={`${manifest.proxy.url}/${manga.cover}` || ""}
-                    href={`/manga/browse/${platform}/${sourceId}/id/${encodeURIComponent(manga.id)}/info`}
-                />
-            </div>
-        {:else}
-            <h1>No results.</h1>
-        {/each}
-        {#each new Array(12 - list.length % 12) as _}
-            <div class="result"></div>
-        {/each}
-    </div>
+    <Container>
+        <SearchBar placeholder="Search {source.name}" on:submit={updateMangaList} bind:value={searchText} listings={listings}/>
+        <div class="heading">
+            <a href="/manga/browse/{$page.params.platform}/{$page.params.source}"><i class="f7-icons heading-glyph">chevron_left</i></a>
+            <span class="heading-title">{listing.name}</span>
+        </div>
+        <div class="results">
+            {#each list as manga}
+                <div class="result">
+                    <ListingCard 
+                        title={manga.title || ""}
+                        subtitle={manga.author || ""}
+                        cover={`${$proxy}/${manga.cover}` || ""}
+                        href={`/manga/browse/${platform}/${sourceId}/id/${encodeURIComponent(manga.id)}/info`}
+                    />
+                </div>
+            {:else}
+                <h1>No results.</h1>
+            {/each}
+            {#each new Array(12 - list.length % 12) as _}
+                <div class="result"></div>
+            {/each}
+        </div>
+    </Container>
 {:else}
     <LoadingBar />
 {/if}

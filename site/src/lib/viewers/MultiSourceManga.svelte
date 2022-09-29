@@ -1,5 +1,4 @@
 <script lang="ts">
-    import manifest from "$lib/manifest";
     import type { MangaSource, MangaChapter, MangaPage } from "soshiki-packages/manga/mangaSource";
     import { page } from "$app/stores"
     import { goto } from "$app/navigation";
@@ -8,7 +7,7 @@
     import List from "$lib/List.svelte";
     import Dropdown from "$lib/Dropdown.svelte";
     import Cookie from "js-cookie";
-    import { tracker } from "$lib/stores";
+    import { tracker, proxy } from "$lib/stores";
 
     export let fullscreen: boolean;
     $: updateFullscreen(fullscreen);
@@ -382,7 +381,7 @@
         if (page.base64 && page.base64.length > 0) {
             img.src = page.base64;
         } else {
-            sources[chapters[chapterIndex]["platform"]][chapters[chapterIndex]["sourceId"]].modifyImageRequest(new Request(manifest.proxy.url + "/" + page.url)).then(req => fetch(req)).then(res => res.blob()).then(blob => img.src = URL.createObjectURL(blob));
+            sources[chapters[chapterIndex]["platform"]][chapters[chapterIndex]["sourceId"]].modifyImageRequest(new Request($proxy + "/" + page.url)).then(req => fetch(req)).then(res => res.blob()).then(blob => img.src = URL.createObjectURL(blob));
         }
         img.classList.add("reader-page");
         img.dataset.chapter = chapterIndex.toString();

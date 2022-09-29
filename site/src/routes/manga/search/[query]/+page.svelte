@@ -1,15 +1,15 @@
 <script lang="ts">
     import { page } from "$app/stores";
     import { goto } from "$app/navigation";
-    import manifest from "$lib/manifest";
     import ListingCard from "$lib/listing/ListingCard.svelte";
     import SearchBar from "$lib/search/SearchBar.svelte";
+    import Container from "$lib/Container.svelte"
     let query = $page.params.query;
     let savedQuery = query;
     $: savedQuery = $page.params.query, updateResults();
     let results: any;
     function updateResults() {
-        results = fetch(`${manifest.api.url}/info/manga/search/${query}`)
+        results = fetch(`https://api.soshiki.moe/info/manga/search/${query}`)
             .then(res => res.json());
     }
     async function submit() {
@@ -21,37 +21,39 @@
     <title>{savedQuery} - Soshiki</title>
 </svelte:head>
 
-<SearchBar bind:value={query} on:submit={submit}/>
-{#if results}
-    {#await results then results} 
-        <div class="heading">
-            <div class="heading-title">Results for '{savedQuery}'</div>
-            <div class="heading-count">{results.length}</div>
-        </div>
-    {/await}
-{/if}
-<div class="results">
+<Container>
+    <SearchBar bind:value={query} on:submit={submit}/>
     {#if results}
         {#await results then results} 
-            {#each results as result}
-                <div class="result">
-                    <ListingCard 
-                        cover={result.info.cover} 
-                        title={result.info.title} 
-                        subtitle={result.info.author} 
-                        href={`/manga/${result.id}/info`}
-                    />
-                </div>
-            {/each}
-            {#each new Array(12 - results.length % 12) as _}
-                <div class="result"></div>
-            {/each}
+            <div class="heading">
+                <div class="heading-title">Results for '{savedQuery}'</div>
+                <div class="heading-count">{results.length}</div>
+            </div>
         {/await}
     {/if}
-</div>
+    <div class="results">
+        {#if results}
+            {#await results then results} 
+                {#each results as result}
+                    <div class="result">
+                        <ListingCard 
+                            cover={result.info.cover} 
+                            title={result.info.title} 
+                            subtitle={result.info.author} 
+                            href={`/manga/${result.id}/info`}
+                        />
+                    </div>
+                {/each}
+                {#each new Array(12 - results.length % 12) as _}
+                    <div class="result"></div>
+                {/each}
+            {/await}
+        {/if}
+    </div>
+</Container>
 
 <style lang='scss'>
-    @use "../../../styles/global.scss" as *;
+    @use "../../../../styles/global.scss" as *;
     .results {
         display: flex;
         flex-wrap: wrap;

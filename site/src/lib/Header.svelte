@@ -90,6 +90,10 @@
                     <i class="f7-icons dropdown-item-glyph">person_crop_circle_fill</i>
                     <span class="dropdown-item-span">Login</span>
                 </a>
+                <a href="/settings" class="dropdown-item" on:click={() => dropped = false}>
+                    <i class="f7-icons dropdown-item-glyph">gear_alt_fill</i>
+                    <span class="dropdown-item-span">Settings</span>
+                </a>
             {/if}
         </div>
     </div>

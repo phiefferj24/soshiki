@@ -20,6 +20,7 @@
         "site:open": "yarn workspace soshiki-site build && yarn workspace soshiki-site preview --open",
         "site:war": "yarn workspace soshiki-site build && yarn workspace soshiki-site preview:war",
         "site:war:open": "yarn workspace soshiki-site build && yarn workspace soshiki-site preview:war --open",
+        "site:sync": "yarn workspace soshiki-site sync",
         "proxy": "yarn workspace soshiki-proxy start",
         "proxy:dev": "yarn workspace soshiki-proxy start:dev",
         "api": "yarn workspace soshiki-api start",
@@ -27,5 +28,8 @@
         "updater": "yarn workspace soshiki-updater start",
         "updater:dev": "yarn workspace soshiki-updater dev"
     },
-    "packageManager": "yarn@3.2.1"
+    "packageManager": "yarn@3.2.1",
+    "dependencies": {
+        "typescript": "^4.8.3"
+    }
 }

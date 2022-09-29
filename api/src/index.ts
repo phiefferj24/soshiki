@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import MAL, * as MALTypes from './mal';
 import AniList, * as AniListTypes from './anilist';
 import Cookie from 'cookie';
+import fetch from 'node-fetch';
 
 dotenv.config();
 

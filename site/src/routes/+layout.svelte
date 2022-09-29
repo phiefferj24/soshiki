@@ -4,9 +4,8 @@
     import Footer from '$lib/Footer.svelte';
     import { page } from '$app/stores';
     import { onMount } from 'svelte';
-    import { currentMedium, user } from '$lib/stores';
+    import { currentMedium, user, proxy } from '$lib/stores';
     import Cookie from 'js-cookie';
-    import { goto } from '$app/navigation';
     import LoadingBar from '$lib/LoadingBar.svelte';
     import * as Sources from '$lib/sources';
     import type { Medium } from 'soshiki-types';
@@ -15,6 +14,9 @@
 
     let mounted = false;
     async function init() {
+        let storage = JSON.parse(localStorage.getItem('soshiki') || "{}") || {};
+        let proxyUrl = storage.proxy ?? 'https://proxy.soshiki.moe';
+        proxy.set(proxyUrl);
         await Sources.init();
         let access = Cookie.get("access");
         let refresh = Cookie.get("refresh");

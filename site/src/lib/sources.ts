@@ -1,5 +1,5 @@
 import { writable } from "svelte/store"
-import { browser } from "$app/env"
+import { browser } from "$app/environment"
 import type { Medium } from "soshiki-types";
 import { Source, type SourceType, install } from "soshiki-packages/source";
 import type { MangaSource } from "soshiki-packages/manga/mangaSource";

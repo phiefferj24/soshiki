@@ -2,23 +2,35 @@
     import { goto } from "$app/navigation";
     import List from "$lib/List.svelte";
     import { mangaSourceClasses, MangaSourceType } from "soshiki-packages/manga/mangaSource";
+    import { proxy } from "$lib/stores";
+    import Container from "$lib/Container.svelte"
+
+    let proxyUrl: string = $proxy;
+    function setUrl() {
+        proxy.set(proxyUrl);
+    }
 </script>
 
-<h1>Settings</h1>
-<div class="lists">
-    <List title="Import Backup" collapsing={true}>
-        {#each Object.keys(MangaSourceType) as mangaPlatform}
-            {#if typeof mangaSourceClasses[mangaPlatform]["importBackup"] !== "undefined"}
-                <div class="list-item">
-                    <span class="list-item-title">{mangaPlatform.charAt(0).toUpperCase() + mangaPlatform.substring(1)}</span>
-                    <span class="list-item-button" on:click={async () => {
-                        await goto(`/settings/import/${mangaPlatform}`);
-                    }}>Import</span>
-                </div>
-            {/if}
-        {/each}
-    </List>
-</div>
+<Container>
+    <h1>Settings</h1>
+    <div class="lists">
+        <List title="Import Backup" collapsing>
+            {#each Object.keys(MangaSourceType) as mangaPlatform}
+                {#if typeof mangaSourceClasses[mangaPlatform]["importBackup"] !== "undefined"}
+                    <div class="list-item">
+                        <span class="list-item-title">{mangaPlatform.charAt(0).toUpperCase() + mangaPlatform.substring(1)}</span>
+                        <span class="list-item-button" on:click={async () => {
+                            await goto(`/settings/import/${mangaPlatform}`);
+                        }}>Import</span>
+                    </div>
+                {/if}
+            {/each}
+        </List>
+        <List title="Proxy" collapsing>
+            <input type="text" placeholder="Proxy URL" bind:value={proxyUrl} on:change={setUrl}>
+        </List>
+    </div>
+</Container>
 
 <style lang="scss">
     @use "../../styles/global.scss" as *;

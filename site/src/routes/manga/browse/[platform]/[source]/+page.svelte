@@ -6,8 +6,9 @@
     import { onMount } from "svelte";
     import SearchBar from "$lib/search/SearchBar.svelte";
     import ListingCard from "$lib/listing/ListingCard.svelte";
-    import manifest from "$lib/manifest";
     import LoadingBar from "$lib/LoadingBar.svelte";
+    import { proxy } from "$lib/stores";
+    import Container from "$lib/Container.svelte";
     let sourceId = $page.params.source;
     let platform = $page.params.platform;
     let source = Sources.sources.manga[platform].find(s => s.id === sourceId) as MangaSource.MangaSource;
@@ -60,32 +61,34 @@
 </script>
 
 {#if mounted}
-    <SearchBar placeholder="Search {source.name}" on:submit={updateMangaList} bind:value={searchText} bind:filters={filters} listings={listings}/>
-    {#if cachedSearchText && cachedSearchText.length > 0}
-        <div class="heading">
-            <div class="heading-title">Results for '{cachedSearchText}'</div>
-            <div class="heading-count">{list.length}</div>
-        </div>
-    {/if}
-    <div class="results">
-        {#each list as manga}
-            <div class="result">
-                {#await source.modifyImageRequest(new Request(`${manifest.proxy.url}/${manga.cover}` || "")).then(req => fetch(req)).then(res => res.blob()).then(blob => URL.createObjectURL(blob)) then url}
-                    <ListingCard 
-                        title={manga.title || ""}
-                        subtitle={manga.author || ""}
-                        cover={url}
-                        href={`/manga/browse/${platform}/${sourceId}/id/${encodeURIComponent(manga.id)}/info`}
-                    />
-                {/await}
+    <Container>
+        <SearchBar placeholder="Search {source.name}" on:submit={updateMangaList} bind:value={searchText} bind:filters={filters} listings={listings}/>
+        {#if cachedSearchText && cachedSearchText.length > 0}
+            <div class="heading">
+                <div class="heading-title">Results for '{cachedSearchText}'</div>
+                <div class="heading-count">{list.length}</div>
             </div>
-        {:else}
-            <h1>No results.</h1>
-        {/each}
-        {#each new Array(12 - list.length % 12) as _}
-            <div class="result"></div>
-        {/each}
-    </div>
+        {/if}
+        <div class="results">
+            {#each list as manga}
+                <div class="result">
+                    {#await source.modifyImageRequest(new Request(`${$proxy}/${manga.cover}` || "")).then(req => fetch(req)).then(res => res.blob()).then(blob => URL.createObjectURL(blob)) then url}
+                        <ListingCard 
+                            title={manga.title || ""}
+                            subtitle={manga.author || ""}
+                            cover={url}
+                            href={`/manga/browse/${platform}/${sourceId}/id/${encodeURIComponent(manga.id)}/info`}
+                        />
+                    {/await}
+                </div>
+            {:else}
+                <h1>No results.</h1>
+            {/each}
+            {#each new Array(12 - list.length % 12) as _}
+                <div class="result"></div>
+            {/each}
+        </div>
+    </Container>    
 {:else}
     <LoadingBar />
 {/if}

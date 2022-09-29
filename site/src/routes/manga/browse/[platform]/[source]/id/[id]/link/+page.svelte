@@ -1,6 +1,5 @@
 <script lang="ts">
     import ListingRow from "$lib/listing/ListingRow.svelte";
-    import manifest from "$lib/manifest";
     import { page } from "$app/stores";
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
@@ -9,6 +8,7 @@
     import type * as MangaSource from "soshiki-packages/manga/mangaSource";
     import Cookie from "js-cookie";
     import LoadingBar from "$lib/LoadingBar.svelte";
+    import Container from '$lib/Container.svelte';
 
     let source: MangaSource.MangaSource;
     let mounted = false;
@@ -29,7 +29,7 @@
     let searchText = "";
     async function getResults() {
         cachedSearchText = searchText;
-        results = await fetch(`${manifest.api.url}/info/manga/search/${encodeURIComponent(searchText)}`).then(res => res.json());
+        results = await fetch(`https://api.soshiki.moe/info/manga/search/${encodeURIComponent(searchText)}`).then(res => res.json());
     }
     async function link(e: Event) {
         e.preventDefault();
@@ -40,7 +40,7 @@
             el = el.parentElement;
         }
         if(id) {
-            await fetch(`${manifest.api.url}/link/manga/${$page.params.platform}/${$page.params.source}/${encodeURIComponent($page.params.id)}/${id}`, {
+            await fetch(`https://api.soshiki.moe/link/manga/${$page.params.platform}/${$page.params.source}/${encodeURIComponent($page.params.id)}/${id}`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${Cookie.get("access")}`
@@ -55,31 +55,33 @@
 
 
 {#if mounted}
-    <SearchBar bind:value={searchText} on:submit={getResults}/>
-    <div class="heading">
-        <div class="heading-title">Results for '{cachedSearchText}'</div>
-        <div class="heading-count">{results.length}</div>
-    </div>
-    {#if results.length > 0}
-        <div class="results">
-            {#each results as result}
-                <div class="result" data-id={result.id}>
-                    <ListingRow
-                        title={result.info.title || ""}
-                        subtitle={result.info.author || ""}
-                        cover={result.info.cover || ""}
-                        href={``}
-                        on:click={async (e) => await link(e)}
-                    />
-                </div>
-            {/each}
+    <Container>
+        <SearchBar bind:value={searchText} on:submit={getResults}/>
+        <div class="heading">
+            <div class="heading-title">Results for '{cachedSearchText}'</div>
+            <div class="heading-count">{results.length}</div>
         </div>
-    {/if}
+        {#if results.length > 0}
+            <div class="results">
+                {#each results as result}
+                    <div class="result" data-id={result.id}>
+                        <ListingRow
+                            title={result.info.title || ""}
+                            subtitle={result.info.author || ""}
+                            cover={result.info.cover || ""}
+                            href={``}
+                            on:click={async (e) => await link(e)}
+                        />
+                    </div>
+                {/each}
+            </div>
+        {/if}
+    </Container>
 {:else}
     <LoadingBar />
 {/if}
 <style lang="scss">
-    @use "../../../../../../../styles/global.scss" as *;
+    @use "../../../../../../../../styles/global.scss" as *;
     .results {
         display: flex;
         flex-direction: column;

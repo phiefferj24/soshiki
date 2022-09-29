@@ -54,7 +54,7 @@
 </div>
 
 <style lang=scss>
-    @use "../styles/global.scss" as *;
+    @use "../../styles/global.scss" as *;
     .about {
         display: flex;
         flex-direction: column;

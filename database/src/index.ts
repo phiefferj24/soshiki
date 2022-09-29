@@ -1,5 +1,7 @@
 import { Client } from 'pg';
 import type { Medium, Json } from 'soshiki-types';
+import { config } from 'dotenv';
+config();
 export default class Database {
     client: Client;
     private constructor(client: Client) {
@@ -24,14 +26,22 @@ export default class Database {
                     RETURNING id
                 `, [discord, access, refresh]);
                 let session = await this.getSession(id.rows[0].id, expires * 1000);
-                return {id: id.rows[0].id, access: session.access, refresh: session.refresh};
+                if (session) {
+                    return {id: id.rows[0].id, access: session.access, refresh: session.refresh};
+                } else {
+                    return null;
+                }
             } else {
                 let id = await this.client.query(`
                     UPDATE users SET access = $1, refresh = $2 WHERE discord = $3 RETURNING id
                 `, [access, refresh, discord]
                 );
                 let session = await this.getSession(id.rows[0].id, expires * 1000);
-                return {id: id.rows[0].id, access: session.access, refresh: session.refresh};
+                if (session) {
+                    return {id: id.rows[0].id, access: session.access, refresh: session.refresh};
+                } else {
+                    return null;
+                }
             }
         } catch (e) {
             return null;

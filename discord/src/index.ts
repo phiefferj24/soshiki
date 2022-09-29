@@ -1,4 +1,6 @@
 import manifest from "soshiki-manifest";
+import fetch from 'node-fetch';
+
 export default class Discord {
     static async getUserInfo(userId: string) {
         return await (await this.api(`users/${userId}`)).json();

@@ -4,7 +4,7 @@
     import { page } from "$app/stores";
     import Cookie from 'js-cookie';
     import { user, tracker } from "$lib/stores";
-import ServerTracker from "$lib/trackers/server";
+    import ServerTracker from "$lib/trackers/server";
   
     onMount(async () => {
         let type = $page.url.searchParams.get("type");

@@ -14486,7 +14486,7 @@
                 headerString += encodeURIComponent(`${header}:${headers[header]}`);
               }
               // We must first get the response object from Axios, and then transcribe it into our own Response type before returning
-              let response = await (0, axios_1.default)(`https://proxy.soshiki.moe/${request.url}${request.param ?? ''}${headerString}`, {
+              let response = await (0, axios_1.default)(`${window['soshiki'].proxy}/${request.url}${request.param ?? ''}${headerString}`, {
                   method: request.method,
                   headers: headers,
                   data: decodedData,

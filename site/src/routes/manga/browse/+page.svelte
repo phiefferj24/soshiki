@@ -1,4 +1,5 @@
 <script lang=ts>
+	import Container from '$lib/Container.svelte';
     import { page } from "$app/stores";
     import { onMount } from "svelte";
     import * as MangaSource from "soshiki-packages/manga/mangaSource"
@@ -46,50 +47,52 @@
 </script>
 
 {#if mounted}
-    <div class="browse">
-        <span class="browse-heading">Installed Sources</span>
-        <div class="list-list">
-            {#each Object.keys(installedSources) || [] as platform}
-                {#if installedSources[platform].length > 0}
-                    <List title={platform.charAt(0).toUpperCase() + platform.slice(1)} subtitle={installedSources[platform].length} collapsing={true}>
-                        {#each installedSources[platform] as source}
-                            <div class="list-item" data-platform={platform} data-id={source.id} on:click={(e) => sourceSelected(e)}>
-                                <div class="list-item-column">
-                                    <img class="list-item-image" src={source.image} alt={source.name}>
-                                    <span class="list-item-title">{source.name}</span>
-                                    <span class="list-item-subtitle">v{source.version}</span>
+    <Container>
+        <div class="browse">
+            <span class="browse-heading">Installed Sources</span>
+            <div class="list-list">
+                {#each Object.keys(installedSources) || [] as platform}
+                    {#if installedSources[platform].length > 0}
+                        <List title={platform.charAt(0).toUpperCase() + platform.slice(1)} subtitle={installedSources[platform].length} collapsing={true}>
+                            {#each installedSources[platform] as source}
+                                <div class="list-item" data-platform={platform} data-id={source.id} on:click={(e) => sourceSelected(e)}>
+                                    <div class="list-item-column">
+                                        <img class="list-item-image" src={source.image} alt={source.name}>
+                                        <span class="list-item-title">{source.name}</span>
+                                        <span class="list-item-subtitle">v{source.version}</span>
+                                    </div>
+                                    <span class="list-item-button" on:click={async () => await removeSource(platform, source)}>Remove</span>
                                 </div>
-                                <span class="list-item-button" on:click={async () => await removeSource(platform, source)}>Remove</span>
-                            </div>
-                        {/each}
-                    </List>
-                {/if}
-            {:else}
-                <span class="subtitle">None found.</span>
-            {/each}
-        </div>
-        <span class="browse-heading">Available Sources</span>
-        <div class="list-list">
-            {#each Object.keys(externalSources) || [] as platform}
-                {#if externalSources[platform].length > 0}
-                    <List title={platform.charAt(0).toUpperCase() + platform.slice(1)} subtitle={externalSources[platform].length} collapsing={true}>
-                        {#each externalSources[platform] as source}
-                            <div class="list-item">
-                                <div class="list-item-column">
-                                    <img class="list-item-image" src={source.image} alt={source.name}>
-                                    <span class="list-item-title">{source.name}</span>
-                                    <span class="list-item-subtitle">v{source.version}</span>
+                            {/each}
+                        </List>
+                    {/if}
+                {:else}
+                    <span class="subtitle">None found.</span>
+                {/each}
+            </div>
+            <span class="browse-heading">Available Sources</span>
+            <div class="list-list">
+                {#each Object.keys(externalSources) || [] as platform}
+                    {#if externalSources[platform].length > 0}
+                        <List title={platform.charAt(0).toUpperCase() + platform.slice(1)} subtitle={externalSources[platform].length} collapsing={true}>
+                            {#each externalSources[platform] as source}
+                                <div class="list-item">
+                                    <div class="list-item-column">
+                                        <img class="list-item-image" src={source.image} alt={source.name}>
+                                        <span class="list-item-title">{source.name}</span>
+                                        <span class="list-item-subtitle">v{source.version}</span>
+                                    </div>
+                                    <span class="list-item-button" on:click={async () => await installSource(platform, source)}>Install</span>
                                 </div>
-                                <span class="list-item-button" on:click={async () => await installSource(platform, source)}>Install</span>
-                            </div>
-                        {/each}
-                    </List>
-                {/if}
-            {:else}
-                <span class="subtitle">None found.</span>
-            {/each}
+                            {/each}
+                        </List>
+                    {/if}
+                {:else}
+                    <span class="subtitle">None found.</span>
+                {/each}
+            </div>
         </div>
-    </div>
+    </Container>
 {:else}
     <LoadingBar />
 {/if}

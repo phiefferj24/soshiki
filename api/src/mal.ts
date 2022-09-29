@@ -1,4 +1,5 @@
 import { Json } from "soshiki-types";
+import fetch from 'node-fetch';
 
 export default class MAL {
     static async getAnime(id: string, token: string): Promise<Json> {

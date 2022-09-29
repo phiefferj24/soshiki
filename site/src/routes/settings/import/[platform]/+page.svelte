@@ -8,7 +8,6 @@
     import LoadingBar from '$lib/LoadingBar.svelte';
     import type { Manga } from 'soshiki-packages/manga/mangaSource'
     import SearchBar from '$lib/search/SearchBar.svelte';
-    import manifest from '$lib/manifest';
     import ListingRow from '$lib/listing/ListingRow.svelte';
     import Cookie from 'js-cookie';
     import { tracker } from '$lib/stores';
@@ -60,7 +59,7 @@
         doneLinking = new Promise<void>(res => doneLinkingResolver = res);
         for (let i = 0; i < manga.length; i++) {
             let item = manga[i];
-            let res = await fetch(`${manifest.api.url}/link/manga/${$page.params.platform}/${item.sourceId}/${encodeURIComponent(item.manga.id)}`);
+            let res = await fetch(`https://api.soshiki.moe/link/manga/${$page.params.platform}/${item.sourceId}/${encodeURIComponent(item.manga.id)}`);
             let json = await res.json();
             if (json && json.id && json.id.length >= 0) {
                 linkedManga.push({...manga.splice(i, 1)[0], id: json.id});
@@ -96,7 +95,7 @@
 
     async function updateSearch() {
         cachedSearchText = searchText;
-        results = await fetch(`${manifest.api.url}/info/manga/search/${encodeURIComponent(searchText)}`).then(res => res.json());
+        results = await fetch(`https://api.soshiki.moe/info/manga/search/${encodeURIComponent(searchText)}`).then(res => res.json());
     }
 
     async function linkMangaEvent(e: Event, id: string) {
@@ -107,7 +106,7 @@
         linkedManga.push({...currentlyLinking, id});
         unlinkedManga = unlinkedManga.filter(obj => obj !== currentlyLinking);
         e.preventDefault();
-        await fetch(`${manifest.api.url}/link/manga/${$page.params.platform}/${currentlyLinking.sourceId}/${encodeURIComponent(currentlyLinking.manga.id)}/${id}`, {
+        await fetch(`https://api.soshiki.moe/link/manga/${$page.params.platform}/${currentlyLinking.sourceId}/${encodeURIComponent(currentlyLinking.manga.id)}/${id}`, {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${Cookie.get("access")}`
