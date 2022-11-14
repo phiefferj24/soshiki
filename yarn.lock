@@ -322,13 +322,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/luxon@npm:^2.3.2":
-  version: 2.3.2
-  resolution: "@types/luxon@npm:2.3.2"
-  checksum: b9fe79118681f4bb9f2e37696a7df992a82683ba4448e7ad1af8cc241443ffc64ef08fdeaad749de9e6259b42b0d4b6540d7e880bca39bb504e0f3863d503c98
-  languageName: node
-  linkType: hard
-
 "@types/mime@npm:^1":
   version: 1.3.2
   resolution: "@types/mime@npm:1.3.2"
@@ -548,13 +541,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@zip.js/zip.js@npm:^2.4.20":
-  version: 2.4.23
-  resolution: "@zip.js/zip.js@npm:2.4.23"
-  checksum: 77cf74a7176b85da432a4644cdc89b7fc0d743229bac08e7377f91e6b88737e911032945cbbe308252d06801b5e1425a7ab3e3d93c487f052e2261d804aad2c7
-  languageName: node
-  linkType: hard
-
 "abbrev@npm:1":
   version: 1.1.1
   resolution: "abbrev@npm:1.1.1"
@@ -619,17 +605,6 @@ __metadata:
   checksum: 1101a33f21baa27a2fa8e04b698271e64616b886795fd43c31068c07533c7b3facfcaf4e9e0cab3624bd88f729a592f1c901a1a229c9e490eafce411a8644b79
   languageName: node
   linkType: hard
-
-"aidoku-ts@workspace:packages/manga/aidoku-ts":
-  version: 0.0.0-use.local
-  resolution: "aidoku-ts@workspace:packages/manga/aidoku-ts"
-  dependencies:
-    "@types/luxon": ^2.3.2
-    "@zip.js/zip.js": ^2.4.20
-    cheerio: ^1.0.0-rc.11
-    luxon: ^2.4.0
-  languageName: unknown
-  linkType: soft
 
 "ajv@npm:^6.10.0, ajv@npm:^6.12.4":
   version: 6.12.6
@@ -942,7 +917,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cheerio@npm:^1.0.0-rc.10, cheerio@npm:^1.0.0-rc.11, cheerio@npm:^1.0.0-rc.12":
+"cheerio@npm:^1.0.0-rc.10, cheerio@npm:^1.0.0-rc.12":
   version: 1.0.0-rc.12
   resolution: "cheerio@npm:1.0.0-rc.12"
   dependencies:
@@ -2440,10 +2415,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"luxon@npm:^2.4.0":
-  version: 2.4.0
-  resolution: "luxon@npm:2.4.0"
-  checksum: 6071028d65cc3d3bdab5e6a3995dd97411c92bb3b3163a02deb7b7014318ad3a6fd750ae77131c42141b717c14aef8880d3130f265281d500ef2365f7265b3f3
+"luxon@npm:^3.0.4":
+  version: 3.0.4
+  resolution: "luxon@npm:3.0.4"
+  checksum: d0908c3951da2a10ccf23040210ead23b0da5366a9d0954e7d5db3560189a7bd703d8af1e00084f197effc9cd7158d1bddf32886d98a70d59ce9bc3fe88bbce0
   languageName: node
   linkType: hard
 
@@ -3684,6 +3659,7 @@ __metadata:
     eslint-plugin-svelte3: ^4.0.0
     framework7-icons: ^5.0.5
     js-cookie: ^3.0.1
+    luxon: ^3.0.4
     prettier: ^2.6.2
     prettier-plugin-svelte: ^2.7.0
     sass: ^1.52.3

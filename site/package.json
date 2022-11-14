@@ -39,6 +39,7 @@
 		"cookie": "^0.5.0",
 		"framework7-icons": "^5.0.5",
 		"js-cookie": "^3.0.1",
+		"luxon": "^3.0.4",
 		"svelte-meta-tags": "^2.6.1"
 	}
 }
