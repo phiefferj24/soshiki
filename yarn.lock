@@ -2055,6 +2055,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/luxon@npm:^2.3.2":
+  version: 2.4.0
+  resolution: "@types/luxon@npm:2.4.0"
+  checksum: eeb16a1bfe5440464c1a9635700d103cd18d3cd8da6063a1938478e435cfba6ab8e893aa80c95a407e541187c1e997c3e4481322726bc1258551cb8606d0e5ad
+  languageName: node
+  linkType: hard
+
 "@types/mime@npm:*":
   version: 3.0.1
   resolution: "@types/mime@npm:3.0.1"
@@ -2333,6 +2340,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@zip.js/zip.js@npm:^2.4.20":
+  version: 2.6.54
+  resolution: "@zip.js/zip.js@npm:2.6.54"
+  checksum: c16670d72ed44b332f205219d38664be7b59807b4f394aed34b81bae982e6cd6aef97e1e400da76d718354ee28f53f3deb013ca7929a02b98f1e7a8d8cfe5dae
+  languageName: node
+  linkType: hard
+
 "abbrev@npm:1":
   version: 1.1.1
   resolution: "abbrev@npm:1.1.1"
@@ -2422,6 +2436,17 @@ __metadata:
   checksum: 1101a33f21baa27a2fa8e04b698271e64616b886795fd43c31068c07533c7b3facfcaf4e9e0cab3624bd88f729a592f1c901a1a229c9e490eafce411a8644b79
   languageName: node
   linkType: hard
+
+"aidoku-ts@workspace:packages/manga/aidoku-ts":
+  version: 0.0.0-use.local
+  resolution: "aidoku-ts@workspace:packages/manga/aidoku-ts"
+  dependencies:
+    "@types/luxon": ^2.3.2
+    "@zip.js/zip.js": ^2.4.20
+    cheerio: ^1.0.0-rc.11
+    luxon: ^2.4.0
+  languageName: unknown
+  linkType: soft
 
 "ajv@npm:^6.10.0, ajv@npm:^6.12.4":
   version: 6.12.6
@@ -3022,7 +3047,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cheerio@npm:^1.0.0-rc.10, cheerio@npm:^1.0.0-rc.12":
+"cheerio@npm:^1.0.0-rc.10, cheerio@npm:^1.0.0-rc.11, cheerio@npm:^1.0.0-rc.12":
   version: 1.0.0-rc.12
   resolution: "cheerio@npm:1.0.0-rc.12"
   dependencies:
@@ -4776,27 +4801,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql@*, graphql@workspace:graphql":
-  version: 0.0.0-use.local
-  resolution: "graphql@workspace:graphql"
-  dependencies:
-    "@apollo/server": ^4.1.1
-    "@graphql-codegen/cli": ^2.13.12
-    "@graphql-codegen/typescript": ^2.8.2
-    "@graphql-codegen/typescript-resolvers": ^2.7.7
-    "@types/cors": ^2.8.12
-    "@types/express-graphql": ^0.9.0
-    "@types/graphql": ^14.5.0
-    body-parser: ^1.20.1
-    cors: ^2.8.5
-    graphql: ^16.6.0
-    graphql-parse-resolve-info: ^4.12.3
-    graphql-tag: ^2.12.6
-    pg: ^8.8.0
-  languageName: unknown
-  linkType: soft
-
-"graphql@npm:^16.6.0":
+"graphql@npm:*, graphql@npm:^16.6.0":
   version: 16.6.0
   resolution: "graphql@npm:16.6.0"
   checksum: bf1d9e3c1938ce3c1a81e909bd3ead1ae4707c577f91cff1ca2eca474bfbc7873d5d7b942e1e9777ff5a8304421dba57a4b76d7a29eb19de8711cb70e3c2415e
@@ -5602,6 +5607,13 @@ __metadata:
   version: 7.14.0
   resolution: "lru-cache@npm:7.14.0"
   checksum: efdd329f2c1bb790b71d497c6c59272e6bc2d7dd060ba55fc136becd3dd31fc8346edb446275504d94cb60d3c8385dbf5267b79b23789e409b2bdf302d13f0d7
+  languageName: node
+  linkType: hard
+
+"luxon@npm:^2.4.0":
+  version: 2.5.0
+  resolution: "luxon@npm:2.5.0"
+  checksum: 2fccce6bbdfc8f13c5a8c148ff045ab3b10f4f80cac28dd92575588fffce9b2d7197096d7fedcc61a6245b59f4233507797f530e63f22b9ae4c425dff2909ae3
   languageName: node
   linkType: hard
 
@@ -7293,6 +7305,26 @@ __metadata:
   resolution: "soshiki-discord@workspace:discord"
   dependencies:
     "@types/node-fetch": ^2.6.2
+  languageName: unknown
+  linkType: soft
+
+"soshiki-graphql@workspace:graphql":
+  version: 0.0.0-use.local
+  resolution: "soshiki-graphql@workspace:graphql"
+  dependencies:
+    "@apollo/server": ^4.1.1
+    "@graphql-codegen/cli": ^2.13.12
+    "@graphql-codegen/typescript": ^2.8.2
+    "@graphql-codegen/typescript-resolvers": ^2.7.7
+    "@types/cors": ^2.8.12
+    "@types/express-graphql": ^0.9.0
+    "@types/graphql": ^14.5.0
+    body-parser: ^1.20.1
+    cors: ^2.8.5
+    graphql: ^16.6.0
+    graphql-parse-resolve-info: ^4.12.3
+    graphql-tag: ^2.12.6
+    pg: ^8.8.0
   languageName: unknown
   linkType: soft
 

@@ -52,7 +52,10 @@ const server = new ApolloServer<SoshikiContext>({
     const { url } = await startStandaloneServer(server, {
         context: async ({ req }) => {
             return { token: req.headers.authorization?.substring("Bearer ".length) ?? '' }
-        }
+        },
+	listen: {
+	    port: 3603
+	}
     })
     console.log(url)
 })()

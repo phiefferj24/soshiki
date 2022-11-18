@@ -1,10 +1,12 @@
 {
-  "name": "graphql",
+  "name": "soshiki-graphql",
   "packageManager": "yarn@3.2.1",
   "description": "",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "start": "ts-node ./src/index.ts",
+    "dev": "ts-node-dev ./src/index.ts",
     "codegen": "graphql-codegen"
   },
   "author": "",
