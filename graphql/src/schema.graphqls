@@ -1,0 +1,484 @@
+type Query {
+    User(id: ID): User,
+    Users(ids: [ID!]!): [User]!,
+    Library(mediaType: MediaType!): Library,
+    Libraries: [Library]!,
+    Entry(mediaType: MediaType!, id: ID!): Entry,
+    Entries(mediaType: MediaType!, ids: [ID!]!): [Entry]!,
+    History(mediaType: MediaType!): History,
+    Histories: [History]!,
+    HistoryEntry(mediaType: MediaType!, id: ID!): HistoryEntry,
+    HistoryEntries(mediaType: MediaType!, ids: [ID!]!): [HistoryEntry]!
+    Link(mediaType: MediaType!, platform: String!, source: String!, sourceId: ID!): EntryConnection,
+    Search(mediaType: MediaType!, query: String!): [Entry]!
+}
+
+type Mutation {
+    SetLink(mediaType: MediaType!, platform: String!, source: String!, sourceId: ID!, id: ID!): EntryConnection,
+    RemoveLink(mediaType: MediaType!, platform: String!, source: String!, id: ID!): EntryConnection,
+    AddLibraryItem(mediaType: MediaType!, id: ID!, category: String): Library,
+    RemoveLibraryItem(mediaType: MediaType!, id: ID!): Library,
+    AddLibraryItemToCategory(mediaType: MediaType!, id: ID!, category: String!): Library,
+    RemoveLibraryItemFromCategory(mediaType: MediaType!, id: ID!, category: String!): Library,
+    AddLibraryCategory(mediaType: MediaType!, name: String!): Library,
+    RemoveLibraryCategory(mediaType: MediaType!, name: String!): Library,
+    AddHistoryEntry(mediaType: MediaType!, id: ID!, page: Int, chapter: Float, volume: Float, timestamp: Int, episode: Float, rating: Float, status: TrackerStatus, startTime: Int, lastTime: Int, trackers: [UserTrackerInput!]): History
+    SetHistoryEntry(mediaType: MediaType!, id: ID!, page: Int, chapter: Float, volume: Float, timestamp: Int, episode: Float, rating: Float, status: TrackerStatus, startTime: Int, lastTime: Int, trackers: [UserTrackerInput!]): HistoryEntry
+    RemoveHistoryEntry(mediaType: MediaType!, id: ID!): History
+}
+
+input UserTrackerInput {
+    name: String!,
+    id: String!
+}
+
+enum MediaType {
+    TEXT,
+    IMAGE,
+    VIDEO
+}
+
+type User {
+    id: ID!,
+    discord: String,
+    data: UserData!
+}
+
+type UserData {
+    mal: MALUser,
+    anilist: AnilistUser,
+    history: [History],
+    library: [Library]
+}
+
+type MALUser {
+    id: Int!,
+    name: String!,
+    picture: String!
+}
+
+type AnilistUser {
+    id: Int!,
+    name: String!,
+    avatar: AnilistUserAvatar
+}
+
+type AnilistUserAvatar {
+    large: String,
+    medium: String
+}
+
+type Library {
+    mediaType: MediaType!,
+    categories: [Category]!
+}
+
+type Category {
+    name: String!,
+    entries: [EntryConnection]!
+}
+
+type EntryConnection {
+    id: ID!,
+    entry: Entry
+}
+
+type Entry {
+    id: ID!,
+    info: EntryInfo!,
+    trackers: [Tracker]!,
+    platforms: [Platform]!,
+    history: EmbeddedHistoryEntry
+}
+
+type Tracker {
+    name: String!,
+    id: String,
+    user: String
+}
+
+type Platform {
+    name: String!,
+    sources: [Source]!
+}
+
+type Source {
+    name: String!,
+    id: String!,
+    user: String
+}
+
+type EntryInfo {
+    nsfw: Boolean!,
+    cover: String!,
+    title: String!,
+    author: String!,
+    altTitles: [String]!,
+    mal: MALEntry,
+    anilist: AnilistEntry
+}
+
+type MALEntry {
+    id: Int!,
+    title: String!,
+    mainPicture: MALPicture,
+    alternativeTitles: MALAlternativeTitles,
+    startDate: String,
+    endDate: String,
+    synopsis: String,
+    mean: Float,
+    rank: Int,
+    numListUsers: Int!,
+    numScoringUsers: Int!,
+    nsfw: String,
+    genres: [MALGenre]!,
+    createdAt: String!,
+    updatedAt: String!,
+    mediaType: String!,
+    status: String!,
+    numVolumes: Int,
+    numChapters: Int,
+    authors: [MALPerson],
+    pictures: [MALPicture]!,
+    background: String,
+    relatedAnime: [MALRelation]!,
+    relatedManga: [MALRelation]!,
+    recommendations: [MALRecommendation]!
+}
+
+type MALPicture {
+    large: String,
+    medium: String!
+}
+
+type MALAlternativeTitles {
+    synonyms: [String],
+    en: String,
+    ja: String
+}
+
+type MALGenre {
+    id: Int!,
+    name: String!
+}
+
+type MALPerson {
+    info: MALPersonInfo!,
+    role: String!
+}
+
+type MALPersonInfo {
+    id: Int!,
+    firstName: String!,
+    lastName: String!
+}
+
+type MALRelation {
+    node: MALShortEntry!,
+    relationType: String!,
+    relationTypeFormatted: String!
+}
+
+type MALShortEntry {
+    id: ID!,
+    title: String!,
+    mainPicture: MALPicture
+}
+
+type MALRecommendation {
+    node: MALShortEntry!,
+    numRecommendations: Int!
+}
+
+type AnilistEntry {
+    id: Int!,
+    idMal: Int,
+    title: AnilistMediaTitle,
+    type: AnilistMediaType,
+    format: AnilistMediaFormat,
+    status: AnilistMediaStatus,
+    description: String,
+    startDate: AnilistFuzzyDate,
+    endDate: AnilistFuzzyDate,
+    season: AnilistMediaSeason,
+    seasonYear: Int,
+    seasonInt: Int,
+    episodes: Int,
+    duration: Int,
+    chapters: Int,
+    volumes: Int,
+    countryOfOrigin: String,
+    isLicensed: Boolean,
+    source: AnilistMediaSource,
+    hashtag: String,
+    trailer: AnilistTrailer,
+    updatedAt: Int,
+    coverImage: AnilistMediaCoverImage,
+    bannerImage: String,
+    genres: [String],
+    synonyms: [String],
+    averageScore: Int,
+    meanScore: Int,
+    popularity: Int,
+    isLocked: Boolean,
+    trending: Int,
+    favourites: Int,
+    tags: [AnilistMediaTag],
+    relations: [AnilistEntry],
+    characters: [AnilistCharacter],
+    staff: [AnilistStaff],
+    studios: [AnilistStudio],
+    isFavourite: Boolean!,
+    isAdult: Boolean,
+    nextAiringEpisode: AnilistAiringSchedule,
+    airingSchedule: [AnilistAiringSchedule],
+    externalLinks: [AnilistMediaExternalLink],
+    streamingEpisodes: [AnilistMediaStreamingEpisode],
+    rankings: [AnilistMediaRank],
+    recommendations: [AnilistRecommendation],
+    stats: AnilistMediaStats,
+    siteUrl: String
+}
+
+type AnilistMediaTitle {
+    romaji: String,
+    native: String,
+    english: String,
+    userPreferred: String
+}
+
+enum AnilistMediaType {
+    MANGA,
+    ANIME
+}
+
+enum AnilistMediaFormat {
+    TV,
+    TV_SHORT,
+    MOVIE,
+    SPECIAL,
+    OVA,
+    ONA,
+    MUSIC,
+    MANGA,
+    NOVEL,
+    ONE_SHOT
+}
+
+enum AnilistMediaStatus {
+    FINISHED,
+    RELEASING,
+    NOT_YET_RELEASED,
+    CANCELLED,
+    HIATUS
+}
+
+type AnilistFuzzyDate {
+    year: Int,
+    month: Int,
+    day: Int
+}
+
+enum AnilistMediaSeason {
+    WINTER,
+    SPRING,
+    SUMMER,
+    FALL
+}
+
+enum AnilistMediaSource {
+    ORIGINAL,
+    MANGA,
+    LIGHT_NOVEL,
+    VISUAL_NOVEL,
+    VIDEO_GAME,
+    OTHER,
+    NOVEL,
+    DOUJINSHI,
+    ANIME,
+    WEB_NOVEL,
+    LIVE_ACTION,
+    GAME,
+    COMIC,
+    MULTIMEDIA_PROJECT,
+    PICTURE_BOOK
+}
+
+type AnilistTrailer {
+    id: String,
+    site: String,
+    thumbnail: String
+}
+
+type AnilistMediaCoverImage {
+    extraLarge: String,
+    large: String,
+    medium: String,
+    color: String
+}
+
+type AnilistMediaTag {
+    id: Int!,
+    name: String!,
+    description: String,
+    category: String,
+    rank: Int,
+    isGeneralSpoiler: Boolean,
+    isMediaSpoiler: Boolean,
+    isAdult: Boolean,
+    userId: Int
+}
+
+type AnilistCharacter {
+    id: Int!,
+    name: AnilistCharacterName,
+    image: AnilistCharacterImage
+}
+
+type AnilistCharacterName {
+    first: String,
+    middle: String,
+    last: String,
+    full: String,
+    native: String, 
+    alternative: [String],
+    alternativeSpoiler: [String],
+    userPreferred: String
+}
+
+type AnilistCharacterImage {
+    large: String,
+    medium: String
+}
+
+type AnilistStaff {
+    id: Int!,
+    name: AnilistCharacterName,
+    image: AnilistCharacterImage
+}
+
+type AnilistStaffName {
+    first: String,
+    middle: String,
+    last: String,
+    full: String,
+    native: String, 
+    alternative: [String],
+    alternativeSpoiler: [String],
+    userPreferred: String
+}
+
+type AnilistStaffImage {
+    large: String,
+    medium: String
+}
+
+type AnilistStudio {
+    id: Int!,
+    name: String!,
+    isAnimationStudio: Boolean!
+}
+
+type AnilistAiringSchedule {
+    airingAt: Int!,
+    timeUntilAiring: Int!,
+    episode: Int!
+}
+
+type AnilistMediaExternalLink {
+    url: String
+}
+
+type AnilistMediaStreamingEpisode {
+    title: String,
+    thumbnail: String,
+    url: String,
+    site: String
+}
+
+type AnilistMediaRank {
+    rank: Int!,
+    type: AnilistMediaRankType!,
+    context: String!,
+    year: Int,
+    season: AnilistMediaSeason
+}
+
+enum AnilistMediaRankType {
+    RATED,
+    POPULAR
+}
+
+type AnilistRecommendation {
+    mediaRecommendation: AnilistEntry
+}
+
+type AnilistMediaStats {
+    scoreDistribution: [AnilistScoreDistribution],
+    statusDistribution: [AnilistStatusDistribution]
+}
+
+type AnilistScoreDistribution {
+    score: Int,
+    amount: Int
+}
+
+type AnilistStatusDistribution {
+    status: AnilistMediaListStatus,
+    amount: Int
+}
+
+enum AnilistMediaListStatus {
+    CURRENT,
+    PLANNING,
+    COMPLETED,
+    DROPPED,
+    PAUSED,
+    REPEATING
+}
+
+type History {
+    mediaType: MediaType!,
+    entries: [HistoryEntry]!
+}
+
+type HistoryEntry {
+    id: ID!,
+    entry: Entry,
+    page: Int,
+    chapter: Float,
+    timestamp: Int,
+    episode: Float,
+    rating: Float,
+    status: TrackerStatus,
+    startTime: Int,
+    lastTime: Int,
+    trackerIds: [UserTracker]
+}
+
+type UserTracker {
+    name: String!,
+    id: String!
+}
+
+type EmbeddedHistoryEntry {
+    id: ID!,
+    page: Int,
+    chapter: Float,
+    timestamp: Int,
+    episode: Float,
+    rating: Float,
+    status: TrackerStatus,
+    startTime: Int,
+    lastTime: Int,
+    trackerIds: [Tracker]
+}
+
+enum TrackerStatus {
+    UNKNOWN,
+    PLANNED,
+    ONGOING,
+    COMPLETED,
+    DROPPED,
+    PAUSED
+}
