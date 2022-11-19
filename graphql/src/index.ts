@@ -452,9 +452,27 @@ async function getLink(token: string, args: Soshiki.QueryLinkArgs, info: any, cl
 async function getSearchResults(token: string, args: Soshiki.QuerySearchArgs, info: any, client?: PoolClient): Promise<Soshiki.Entry[]> {
     const clientRequiresClosing = typeof client === 'undefined'
     if (clientRequiresClosing) client = await pool.connect();
+    const userId = await getUserId(token, client!)
     try {
-        const results = (await client!.query(`select * from ${convertMediaType(args.mediaType)} where info->>'title' ilike $1`, [`%${args.query}%`])).rows
-        return results.concat((await client!.query(`select * from ${convertMediaType(args.mediaType)} where info->>'title' ilike $1`, [`%${args.query}%`])).rows.filter(item => !results.find(result => result.id === item.id)))
+        let results = (await client!.query(`select * from ${convertMediaType(args.mediaType)} where info->>'title' ilike $1`, [`%${args.query}%`])).rows
+        results = results.concat((await client!.query(`select * from ${convertMediaType(args.mediaType)} where info->>'title' ilike $1`, [`%${args.query}%`])).rows.filter(item => !results.find(result => result.id === item.id)))
+        const historyEntries = typeof userId === 'string' && requiresField(info, "EmbeddedHistoryEntry") ? await getEmbeddedHistoryEntries(token, args.mediaType, results.map(result => result.id), info, client!, userId) : []
+        return Promise.all(
+            results.map(async result => {
+                return {
+                    id: result.id,
+                    info: {
+                        ...result.info,
+                        altTitles: result.info.alt_titles,
+                        anilist: typeof result.info.anilist === 'undefined' ? undefined : mapAnilistEntry(result.info.anilist),
+                        mal: typeof result.info.mal === 'undefined' ? undefined : mapMALEntry(result.info.mal),
+                    },
+                    platforms: mapPlatforms(result.source_ids),
+                    trackers: mapTrackers(result.tracker_ids),
+                    history: historyEntries.find(historyEntry => historyEntry.id === result.id)
+                }
+            })
+        )
     } catch (e) {
         return [];
     } finally {

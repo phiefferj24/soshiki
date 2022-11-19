@@ -489,7 +489,7 @@ export type MutationAddHistoryEntryArgs = {
   startTime?: InputMaybe<Scalars['Int']>;
   status?: InputMaybe<TrackerStatus>;
   timestamp?: InputMaybe<Scalars['Int']>;
-  trackers?: InputMaybe<Array<UserTracker>>;
+  trackers?: InputMaybe<Array<UserTrackerInput>>;
   volume?: InputMaybe<Scalars['Float']>;
 };
 
@@ -558,7 +558,7 @@ export type MutationSetHistoryEntryArgs = {
   startTime?: InputMaybe<Scalars['Int']>;
   status?: InputMaybe<TrackerStatus>;
   timestamp?: InputMaybe<Scalars['Int']>;
-  trackers?: InputMaybe<Array<UserTracker>>;
+  trackers?: InputMaybe<Array<UserTrackerInput>>;
   volume?: InputMaybe<Scalars['Float']>;
 };
 
