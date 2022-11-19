@@ -197,7 +197,7 @@ async function getLibraries(token: string, info: any, client?: PoolClient): Prom
         const requiresEntry = requiresField(info, "Entry")
         return await Promise.all(
             Object.entries(libraries).map(async library => {
-                const entries = requiresEntry ? await getEntries(token, { mediaType: getMediaType(library[0]), ids: Object.values(library).flatMap(id => id as string) }, info, client) : []
+                const entries = requiresEntry ? await getEntries(token, { mediaType: getMediaType(library[0]), ids: Object.values(library[1] as any).flatMap(id => id as string) }, info, client) : []
                 return {
                     categories: Object.entries(library[1] as any).map(entry => {
                         return {
