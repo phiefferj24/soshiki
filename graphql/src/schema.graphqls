@@ -353,8 +353,8 @@ type AnilistCharacterImage {
 
 type AnilistStaff {
     id: Int!,
-    name: AnilistCharacterName,
-    image: AnilistCharacterImage
+    name: AnilistStaffName,
+    image: AnilistStaffImage
 }
 
 type AnilistStaffName {

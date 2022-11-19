@@ -240,8 +240,8 @@ export type AnilistScoreDistribution = {
 export type AnilistStaff = {
   __typename?: 'AnilistStaff';
   id: Scalars['Int'];
-  image?: Maybe<AnilistCharacterImage>;
-  name?: Maybe<AnilistCharacterName>;
+  image?: Maybe<AnilistStaffImage>;
+  name?: Maybe<AnilistStaffName>;
 };
 
 export type AnilistStaffImage = {
@@ -1055,8 +1055,8 @@ export type AnilistScoreDistributionResolvers<ContextType = any, ParentType exte
 
 export type AnilistStaffResolvers<ContextType = any, ParentType extends ResolversParentTypes['AnilistStaff'] = ResolversParentTypes['AnilistStaff']> = ResolversObject<{
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  image?: Resolver<Maybe<ResolversTypes['AnilistCharacterImage']>, ParentType, ContextType>;
-  name?: Resolver<Maybe<ResolversTypes['AnilistCharacterName']>, ParentType, ContextType>;
+  image?: Resolver<Maybe<ResolversTypes['AnilistStaffImage']>, ParentType, ContextType>;
+  name?: Resolver<Maybe<ResolversTypes['AnilistStaffName']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
