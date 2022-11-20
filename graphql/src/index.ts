@@ -696,7 +696,7 @@ async function removeLibraryItem(token: string, args: Soshiki.MutationRemoveLibr
         let library = data.library?.[convertMediaType(args.mediaType)]
         if (typeof library === 'undefined') return null;
         for (const key of Object.keys(library)) {
-            if (library[key].includes(args.id)) library.splice(library[key].indexOf(args.id), 1)
+            if (library[key].includes(args.id)) library[key].splice(library[key].indexOf(args.id), 1)
         }
         data.library[convertMediaType(args.mediaType)] = library
         await client!.query(`update users set data = $1 where id = $2`, [data, userId])
@@ -772,7 +772,7 @@ async function removeLibraryItemFromCategory(token: string, args: Soshiki.Mutati
         let library = data.library?.[convertMediaType(args.mediaType)]
         if (typeof library === 'undefined') return null;
         if (typeof library[""] === 'undefined' || !library[""].includes(args.id)) return null;
-        if (typeof library[args.category] !== "undefined" && library[args.category].includes(args.id)) library.splice(library[args.category].indexOf(args.id), 1)
+        if (typeof library[args.category] !== "undefined" && library[args.category].includes(args.id)) library[args.category].splice(library[args.category].indexOf(args.id), 1)
         data.library[convertMediaType(args.mediaType)] = library
         await client!.query(`update users set data = $1 where id = $2`, [data, userId])
         const entries = requiresField(info, "Entry") ? await getEntries(token, { mediaType: args.mediaType, ids: Object.values(library).flatMap(id => id as string) }, info, client) : []
