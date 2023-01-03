@@ -28,12 +28,17 @@ const resolvers: Soshiki.Resolvers = {
         SetLink: async (_parent: any, args: Soshiki.MutationSetLinkArgs, context: SoshikiContext, info: any) => await setLink(context.token, args, parseResolveInfo(info)),
         RemoveLink: async (_parent: any, args: Soshiki.MutationRemoveLinkArgs, context: SoshikiContext, info: any) => await removeLink(context.token, args, parseResolveInfo(info)),
         AddLibraryItem: async (_parent: any, args: Soshiki.MutationAddLibraryItemArgs, context: SoshikiContext, info: any) => await addLibraryItem(context.token, args, parseResolveInfo(info)),
+        AddLibraryItems: async (_parent: any, args: Soshiki.MutationAddLibraryItemsArgs, context: SoshikiContext, info: any) => await addLibraryItems(context.token, args, parseResolveInfo(info)),
         RemoveLibraryItem: async (_parent: any, args: Soshiki.MutationRemoveLibraryItemArgs, context: SoshikiContext, info: any) => await removeLibraryItem(context.token, args, parseResolveInfo(info)),
+        RemoveLibraryItems: async (_parent: any, args: Soshiki.MutationRemoveLibraryItemsArgs, context: SoshikiContext, info: any) => await removeLibraryItems(context.token, args, parseResolveInfo(info)),
         AddLibraryItemToCategory: async (_parent: any, args: Soshiki.MutationAddLibraryItemToCategoryArgs, context: SoshikiContext, info: any) => await addLibraryItemToCategory(context.token, args, parseResolveInfo(info)),
+        AddLibraryItemsToCategory: async (_parent: any, args: Soshiki.MutationAddLibraryItemsToCategoryArgs, context: SoshikiContext, info: any) => await addLibraryItemsToCategory(context.token, args, parseResolveInfo(info)),
         RemoveLibraryItemFromCategory: async (_parent: any, args: Soshiki.MutationRemoveLibraryItemFromCategoryArgs, context: SoshikiContext, info: any) => await removeLibraryItemFromCategory(context.token, args, parseResolveInfo(info)),
+        RemoveLibraryItemsFromCategory: async (_parent: any, args: Soshiki.MutationRemoveLibraryItemsFromCategoryArgs, context: SoshikiContext, info: any) => await removeLibraryItemsFromCategory(context.token, args, parseResolveInfo(info)),
         AddLibraryCategory: async (_parent: any, args: Soshiki.MutationAddLibraryCategoryArgs, context: SoshikiContext, info: any) => await addLibraryCategory(context.token, args, parseResolveInfo(info)),
+        AddLibraryCategories: async (_parent: any, args: Soshiki.MutationAddLibraryCategoriesArgs, context: SoshikiContext, info: any) => await addLibraryCategories(context.token, args, parseResolveInfo(info)),
         RemoveLibraryCategory: async (_parent: any, args: Soshiki.MutationRemoveLibraryCategoryArgs, context: SoshikiContext, info: any) => await removeLibraryCategory(context.token, args, parseResolveInfo(info)),
-        AddHistoryEntry: async (_parent: any, args: Soshiki.MutationAddHistoryEntryArgs, context: SoshikiContext, info: any) => await addHistoryEntry(context.token, args, parseResolveInfo(info)),
+        RemoveLibraryCategories: async (_parent: any, args: Soshiki.MutationRemoveLibraryCategoriesArgs, context: SoshikiContext, info: any) => await removeLibraryCategories(context.token, args, parseResolveInfo(info)),
         SetHistoryEntry: async (_parent: any, args: Soshiki.MutationSetHistoryEntryArgs, context: SoshikiContext, info: any) => await setHistoryEntry(context.token, args, parseResolveInfo(info)),
         RemoveHistoryEntry: async (_parent: any, args: Soshiki.MutationRemoveHistoryEntryArgs, context: SoshikiContext, info: any) => await removeHistoryEntry(context.token, args, parseResolveInfo(info)),
     }
@@ -518,6 +523,17 @@ function mapTrackers(data: any): Soshiki.Tracker[] {
     }
 }
 
+function mapUserTrackers(data: any): Soshiki.UserTracker[] {
+    try {
+        return Object.entries(data).map(tracker => { return {
+            name: tracker[0],
+            id: tracker[1] as string
+        }})
+    } catch (e) {
+        return []
+    }
+}
+
 function mapAnilistEntry(data: any): Soshiki.AnilistEntry | undefined {
     try {
         return {
@@ -657,10 +673,49 @@ async function addLibraryItem(token: string, args: Soshiki.MutationAddLibraryIte
         if (typeof result === 'undefined') return null;
         let data = result.data
         let library = data.library?.[convertMediaType(args.mediaType)]
-        if (typeof library === 'undefined') return null;
+        if (typeof library === 'undefined') library = {};
         if (typeof library[""] === 'undefined') library[""] = [] as string[]
         library[""].push(args.id)
         if (typeof args.category === 'string' && args.category !== "" && typeof library[args.category] !== 'undefined') library[args.category].push(args.id)
+        data.library[convertMediaType(args.mediaType)] = library
+        await client!.query(`update users set data = $1 where id = $2`, [data, userId])
+        const entries = requiresField(info, "Entry") ? await getEntries(token, { mediaType: args.mediaType, ids: Object.values(library).flatMap(id => id as string) }, info, client) : []
+        return {
+            categories: Object.entries(library).map(entry => {
+                return {
+                    entries: (entry[1] as any).map((id: any) => {
+                        return {
+                            id,
+                            entry: entries.find(entry => entry.id === id) ?? null
+                        }
+                    }),
+                    name: entry[0]
+                }
+            }),
+            mediaType: args.mediaType
+        }
+    } catch (e) {
+        return null;
+    } finally {
+        if (clientRequiresClosing) client!.release();
+    }
+}
+
+async function addLibraryItems(token: string, args: Soshiki.MutationAddLibraryItemsArgs, info: any, client?: PoolClient): Promise<Soshiki.Library | null> {
+    const clientRequiresClosing = typeof client === 'undefined'
+    if (clientRequiresClosing) client = await pool.connect();
+    const userId = await getUserId(token, client!)
+    try {
+        const result = (await client!.query(`select data from users where id = $1`, [userId])).rows[0]
+        if (typeof result === 'undefined') return null;
+        let data = result.data
+        let library = data.library?.[convertMediaType(args.mediaType)]
+        if (typeof library === 'undefined') return null;
+        if (typeof library[""] === 'undefined') library[""] = [] as string[]
+        for (const id of args.ids) {
+            library[""].push(id)
+            if (typeof args.category === 'string' && args.category !== "" && typeof library[args.category] !== 'undefined') library[args.category].push(id)
+        }
         data.library[convertMediaType(args.mediaType)] = library
         await client!.query(`update users set data = $1 where id = $2`, [data, userId])
         const entries = requiresField(info, "Entry") ? await getEntries(token, { mediaType: args.mediaType, ids: Object.values(library).flatMap(id => id as string) }, info, client) : []
@@ -697,6 +752,45 @@ async function removeLibraryItem(token: string, args: Soshiki.MutationRemoveLibr
         if (typeof library === 'undefined') return null;
         for (const key of Object.keys(library)) {
             if (library[key].includes(args.id)) library[key].splice(library[key].indexOf(args.id), 1)
+        }
+        data.library[convertMediaType(args.mediaType)] = library
+        await client!.query(`update users set data = $1 where id = $2`, [data, userId])
+        const entries = requiresField(info, "Entry") ? await getEntries(token, { mediaType: args.mediaType, ids: Object.values(library).flatMap(id => id as string) }, info, client) : []
+        return {
+            categories: Object.entries(library).map(entry => {
+                return {
+                    entries: (entry[1] as any).map((id: any) => {
+                        return {
+                            id,
+                            entry: entries.find(entry => entry.id === id) ?? null
+                        }
+                    }),
+                    name: entry[0]
+                }
+            }),
+            mediaType: args.mediaType
+        }
+    } catch (e) {
+        return null;
+    } finally {
+        if (clientRequiresClosing) client!.release();
+    }
+}
+
+async function removeLibraryItems(token: string, args: Soshiki.MutationRemoveLibraryItemsArgs, info: any, client?: PoolClient): Promise<Soshiki.Library | null> {
+    const clientRequiresClosing = typeof client === 'undefined'
+    if (clientRequiresClosing) client = await pool.connect();
+    const userId = await getUserId(token, client!)
+    try {
+        const result = (await client!.query(`select data from users where id = $1`, [userId])).rows[0]
+        if (typeof result === 'undefined') return null;
+        let data = result.data
+        let library = data.library?.[convertMediaType(args.mediaType)]
+        if (typeof library === 'undefined') return null;
+        for (const id of args.ids) {
+            for (const key of Object.keys(library)) {
+                if (library[key].includes(id)) library[key].splice(library[key].indexOf(id), 1)
+            }
         }
         data.library[convertMediaType(args.mediaType)] = library
         await client!.query(`update users set data = $1 where id = $2`, [data, userId])
@@ -760,6 +854,46 @@ async function addLibraryItemToCategory(token: string, args: Soshiki.MutationAdd
     }
 }
 
+async function addLibraryItemsToCategory(token: string, args: Soshiki.MutationAddLibraryItemsToCategoryArgs, info: any, client?: PoolClient): Promise<Soshiki.Library | null> {
+    if (args.category === "") return null;
+    const clientRequiresClosing = typeof client === 'undefined'
+    if (clientRequiresClosing) client = await pool.connect();
+    const userId = await getUserId(token, client!)
+    try {
+        const result = (await client!.query(`select data from users where id = $1`, [userId])).rows[0]
+        if (typeof result === 'undefined') return null;
+        let data = result.data
+        let library = data.library?.[convertMediaType(args.mediaType)]
+        if (typeof library === 'undefined') return null;
+        for (const id of args.ids) {
+            if (typeof library[""] === 'undefined' || !library[""].includes(id)) continue;
+            if (typeof library[args.category] === 'undefined') library[args.category] = [] as string[]
+            library[args.category].push(id)
+        }
+        data.library[convertMediaType(args.mediaType)] = library
+        await client!.query(`update users set data = $1 where id = $2`, [data, userId])
+        const entries = requiresField(info, "Entry") ? await getEntries(token, { mediaType: args.mediaType, ids: Object.values(library).flatMap(id => id as string) }, info, client) : []
+        return {
+            categories: Object.entries(library).map(entry => {
+                return {
+                    entries: (entry[1] as any).map((id: any) => {
+                        return {
+                            id,
+                            entry: entries.find(entry => entry.id === id) ?? null
+                        }
+                    }),
+                    name: entry[0]
+                }
+            }),
+            mediaType: args.mediaType
+        }
+    } catch (e) {
+        return null;
+    } finally {
+        if (clientRequiresClosing) client!.release();
+    }
+}
+
 async function removeLibraryItemFromCategory(token: string, args: Soshiki.MutationRemoveLibraryItemFromCategoryArgs, info: any, client?: PoolClient): Promise<Soshiki.Library | null> {
     if (args.category === "") return null;
     const clientRequiresClosing = typeof client === 'undefined'
@@ -773,6 +907,45 @@ async function removeLibraryItemFromCategory(token: string, args: Soshiki.Mutati
         if (typeof library === 'undefined') return null;
         if (typeof library[""] === 'undefined' || !library[""].includes(args.id)) return null;
         if (typeof library[args.category] !== "undefined" && library[args.category].includes(args.id)) library[args.category].splice(library[args.category].indexOf(args.id), 1)
+        data.library[convertMediaType(args.mediaType)] = library
+        await client!.query(`update users set data = $1 where id = $2`, [data, userId])
+        const entries = requiresField(info, "Entry") ? await getEntries(token, { mediaType: args.mediaType, ids: Object.values(library).flatMap(id => id as string) }, info, client) : []
+        return {
+            categories: Object.entries(library).map(entry => {
+                return {
+                    entries: (entry[1] as any).map((id: any) => {
+                        return {
+                            id,
+                            entry: entries.find(entry => entry.id === id) ?? null
+                        }
+                    }),
+                    name: entry[0]
+                }
+            }),
+            mediaType: args.mediaType
+        }
+    } catch (e) {
+        return null;
+    } finally {
+        if (clientRequiresClosing) client!.release();
+    }
+}
+
+async function removeLibraryItemsFromCategory(token: string, args: Soshiki.MutationRemoveLibraryItemsFromCategoryArgs, info: any, client?: PoolClient): Promise<Soshiki.Library | null> {
+    if (args.category === "") return null;
+    const clientRequiresClosing = typeof client === 'undefined'
+    if (clientRequiresClosing) client = await pool.connect();
+    const userId = await getUserId(token, client!)
+    try {
+        const result = (await client!.query(`select data from users where id = $1`, [userId])).rows[0]
+        if (typeof result === 'undefined') return null;
+        let data = result.data
+        let library = data.library?.[convertMediaType(args.mediaType)]
+        if (typeof library === 'undefined') return null;
+        for (const id of args.ids) {
+            if (typeof library[""] === 'undefined' || !library[""].includes(id)) continue;
+            if (typeof library[args.category] !== "undefined" && library[args.category].includes(id)) library[args.category].splice(library[args.category].indexOf(id), 1)
+        }
         data.library[convertMediaType(args.mediaType)] = library
         await client!.query(`update users set data = $1 where id = $2`, [data, userId])
         const entries = requiresField(info, "Entry") ? await getEntries(token, { mediaType: args.mediaType, ids: Object.values(library).flatMap(id => id as string) }, info, client) : []
@@ -833,6 +1006,44 @@ async function addLibraryCategory(token: string, args: Soshiki.MutationAddLibrar
     }
 }
 
+async function addLibraryCategories(token: string, args: Soshiki.MutationAddLibraryCategoriesArgs, info: any, client?: PoolClient): Promise<Soshiki.Library | null> {
+    const clientRequiresClosing = typeof client === 'undefined'
+    if (clientRequiresClosing) client = await pool.connect();
+    const userId = await getUserId(token, client!)
+    try {
+        const result = (await client!.query(`select data from users where id = $1`, [userId])).rows[0]
+        if (typeof result === 'undefined') return null;
+        let data = result.data
+        let library = data.library?.[convertMediaType(args.mediaType)]
+        if (typeof library === 'undefined') return null;
+        for (const name of args.names) {
+            if (name === "") continue;
+            library[name] = [] as string[]
+        }
+        data.library[convertMediaType(args.mediaType)] = library
+        await client!.query(`update users set data = $1 where id = $2`, [data, userId])
+        const entries = requiresField(info, "Entry") ? await getEntries(token, { mediaType: args.mediaType, ids: Object.values(library).flatMap(id => id as string) }, info, client) : []
+        return {
+            categories: Object.entries(library).map(entry => {
+                return {
+                    entries: (entry[1] as any).map((id: any) => {
+                        return {
+                            id,
+                            entry: entries.find(entry => entry.id === id) ?? null
+                        }
+                    }),
+                    name: entry[0]
+                }
+            }),
+            mediaType: args.mediaType
+        }
+    } catch (e) {
+        return null;
+    } finally {
+        if (clientRequiresClosing) client!.release();
+    }
+}
+
 async function removeLibraryCategory(token: string, args: Soshiki.MutationRemoveLibraryCategoryArgs, info: any, client?: PoolClient): Promise<Soshiki.Library | null> {
     if (args.name === "") return null;
     const clientRequiresClosing = typeof client === 'undefined'
@@ -869,7 +1080,7 @@ async function removeLibraryCategory(token: string, args: Soshiki.MutationRemove
     }
 }
 
-async function addHistoryEntry(token: string, args: Soshiki.MutationAddHistoryEntryArgs, info: any, client?: PoolClient): Promise<Soshiki.History | null> {
+async function removeLibraryCategories(token: string, args: Soshiki.MutationRemoveLibraryCategoriesArgs, info: any, client?: PoolClient): Promise<Soshiki.Library | null> {
     const clientRequiresClosing = typeof client === 'undefined'
     if (clientRequiresClosing) client = await pool.connect();
     const userId = await getUserId(token, client!)
@@ -877,34 +1088,25 @@ async function addHistoryEntry(token: string, args: Soshiki.MutationAddHistoryEn
         const result = (await client!.query(`select data from users where id = $1`, [userId])).rows[0]
         if (typeof result === 'undefined') return null;
         let data = result.data
-        let history = data.history?.[convertMediaType(args.mediaType)]
-        if (typeof history === 'undefined') return null;
-        if (typeof history.find((entry: any) => entry.id === args.id) !== 'undefined') {
-            history.push({
-                id: args.id,
-                page: args.page,
-                rating: args.rating,
-                status: convertTrackerStatus(args.status ?? Soshiki.TrackerStatus.Unknown),
-                chapter: args.chapter,
-                volume: args.volume,
-                timestamp: args.timestamp,
-                episode: args.episode,
-                startTime: args.startTime,
-                lastTime: args.lastTime,
-                tracker_ids: args.trackers?.reduce((obj, value) => { obj[value.name] = value.id; return obj }, {} as {[key: string]: string})
-            })
+        let library = data.library?.[convertMediaType(args.mediaType)]
+        if (typeof library === 'undefined') return null;
+        for (const name of args.names) {
+            if (name === "") continue;
+            delete library[name]
         }
-        data.history[convertMediaType(args.mediaType)] = history
+        data.library[convertMediaType(args.mediaType)] = library
         await client!.query(`update users set data = $1 where id = $2`, [data, userId])
-        const entries = requiresField(info, "Entry") ? await getEntries(token, { mediaType: args.mediaType, ids: history.map((entry: any) => entry.id) }, info, client) : []
+        const entries = requiresField(info, "Entry") ? await getEntries(token, { mediaType: args.mediaType, ids: Object.values(library).flatMap(id => id as string) }, info, client) : []
         return {
-            entries: (history as any).map((entry: any) => {
+            categories: Object.entries(library).map(entry => {
                 return {
-                    lastTime: entry.lastReadTime,
-                    ...entry,
-                    trackerIds: mapTrackers(entry.tracker_ids),
-                    status: getTrackerStatus(entry.status),
-                    entry: entries.find(item => item.id === entry.id) ?? null
+                    entries: (entry[1] as any).map((id: any) => {
+                        return {
+                            id,
+                            entry: entries.find(entry => entry.id === id) ?? null
+                        }
+                    }),
+                    name: entry[0]
                 }
             }),
             mediaType: args.mediaType
@@ -925,9 +1127,32 @@ async function setHistoryEntry(token: string, args: Soshiki.MutationSetHistoryEn
         if (typeof result === 'undefined') return null;
         let data = result.data
         let history = data.history?.[convertMediaType(args.mediaType)]
-        if (typeof history === 'undefined') return null;
+        if (typeof history === 'undefined') history = [];
         const entryIndex = history.findIndex((item: any) => item.id === args.id)
-        if (entryIndex === -1) return null;
+        if (entryIndex === -1) {
+            const entry = {
+                id: args.id,
+                page: args.page,
+                rating: args.rating,
+                status: convertTrackerStatus(args.status ?? Soshiki.TrackerStatus.Unknown),
+                chapter: args.chapter,
+                volume: args.volume,
+                timestamp: args.timestamp,
+                episode: args.episode,
+                startTime: args.startTime,
+                lastTime: args.lastTime,
+                tracker_ids: args.trackers?.reduce((obj, value) => { obj[value.name] = value.id; return obj }, {} as {[key: string]: string})
+            }
+            history.push(entry)
+            data.history[convertMediaType(args.mediaType)] = history
+            await client!.query(`update users set data = $1 where id = $2`, [data, userId])
+            return {
+                ...entry,
+                trackerIds: mapUserTrackers(entry.tracker_ids),
+                status: getTrackerStatus(entry.status),
+                entry: requiresField(info, "Entry") ? await getEntry(token, { mediaType: args.mediaType, id: args.id }, info, client) : undefined
+            }
+        }
         let entry = history[entryIndex]
         for (const tracker of args.trackers ?? []) {
             entry.tracker_ids[tracker.name] = tracker.id
@@ -942,7 +1167,7 @@ async function setHistoryEntry(token: string, args: Soshiki.MutationSetHistoryEn
         return {
             lastTime: entry.lastReadTime,
             ...entry,
-            trackerIds: mapTrackers(entry.tracker_ids),
+            trackerIds: mapUserTrackers(entry.tracker_ids),
             status: getTrackerStatus(entry.status),
             entry: requiresField(info, "Entry") ? await getEntry(token, { mediaType: args.mediaType, id: args.id }, info, client) : undefined
         }
@@ -953,7 +1178,7 @@ async function setHistoryEntry(token: string, args: Soshiki.MutationSetHistoryEn
     }
 }
 
-async function removeHistoryEntry(token: string, args: Soshiki.MutationAddHistoryEntryArgs, info: any, client?: PoolClient): Promise<Soshiki.History | null> {
+async function removeHistoryEntry(token: string, args: Soshiki.MutationRemoveHistoryEntryArgs, info: any, client?: PoolClient): Promise<Soshiki.History | null> {
     const clientRequiresClosing = typeof client === 'undefined'
     if (clientRequiresClosing) client = await pool.connect();
     const userId = await getUserId(token, client!)

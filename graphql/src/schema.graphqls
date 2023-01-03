@@ -17,13 +17,18 @@ type Mutation {
     SetLink(mediaType: MediaType!, platform: String!, source: String!, sourceId: ID!, id: ID!): EntryConnection,
     RemoveLink(mediaType: MediaType!, platform: String!, source: String!, id: ID!): EntryConnection,
     AddLibraryItem(mediaType: MediaType!, id: ID!, category: String): Library,
+    AddLibraryItems(mediaType: MediaType!, ids: [ID!]!, category: String): Library,
     RemoveLibraryItem(mediaType: MediaType!, id: ID!): Library,
+    RemoveLibraryItems(mediaType: MediaType!, ids: [ID!]!): Library,
     AddLibraryItemToCategory(mediaType: MediaType!, id: ID!, category: String!): Library,
+    AddLibraryItemsToCategory(mediaType: MediaType!, ids: [ID!]!, category: String!): Library,
     RemoveLibraryItemFromCategory(mediaType: MediaType!, id: ID!, category: String!): Library,
+    RemoveLibraryItemsFromCategory(mediaType: MediaType!, ids: [ID!]!, category: String!): Library,
     AddLibraryCategory(mediaType: MediaType!, name: String!): Library,
+    AddLibraryCategories(mediaType: MediaType!, names: [String!]!): Library,
     RemoveLibraryCategory(mediaType: MediaType!, name: String!): Library,
-    AddHistoryEntry(mediaType: MediaType!, id: ID!, page: Int, chapter: Float, volume: Float, timestamp: Int, episode: Float, rating: Float, status: TrackerStatus, startTime: Int, lastTime: Int, trackers: [UserTrackerInput!]): History
-    SetHistoryEntry(mediaType: MediaType!, id: ID!, page: Int, chapter: Float, volume: Float, timestamp: Int, episode: Float, rating: Float, status: TrackerStatus, startTime: Int, lastTime: Int, trackers: [UserTrackerInput!]): HistoryEntry
+    RemoveLibraryCategories(mediaType: MediaType!, names: [String!]!): Library,
+    SetHistoryEntry(mediaType: MediaType!, id: ID!, page: Int, chapter: Float, volume: Float, timestamp: Int, episode: Float, rating: Float, status: TrackerStatus, startTime: Float, lastTime: Float, trackers: [UserTrackerInput!]): HistoryEntry
     RemoveHistoryEntry(mediaType: MediaType!, id: ID!): History
 }
 
@@ -451,8 +456,8 @@ type HistoryEntry {
     episode: Float,
     rating: Float,
     status: TrackerStatus,
-    startTime: Int,
-    lastTime: Int,
+    startTime: Float,
+    lastTime: Float,
     trackerIds: [UserTracker]
 }
 
@@ -469,8 +474,8 @@ type EmbeddedHistoryEntry {
     episode: Float,
     rating: Float,
     status: TrackerStatus,
-    startTime: Int,
-    lastTime: Int,
+    startTime: Float,
+    lastTime: Float,
     trackerIds: [Tracker]
 }
 

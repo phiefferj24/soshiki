@@ -7368,6 +7368,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "soshiki@workspace:."
   dependencies:
+    ts-node: ^10.9.1
     typescript: ^4.8.3
   languageName: unknown
   linkType: soft
@@ -7710,7 +7711,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-node@npm:^10.8.1":
+"ts-node@npm:^10.8.1, ts-node@npm:^10.9.1":
   version: 10.9.1
   resolution: "ts-node@npm:10.9.1"
   dependencies:
@@ -7835,7 +7836,7 @@ __metadata:
 
 "typescript@patch:typescript@*#~builtin<compat/typescript>, typescript@patch:typescript@^4.4.3#~builtin<compat/typescript>, typescript@patch:typescript@^4.8.3#~builtin<compat/typescript>":
   version: 4.8.3
-  resolution: "typescript@patch:typescript@npm%3A4.8.3#~builtin<compat/typescript>::version=4.8.3&hash=7ad353"
+  resolution: "typescript@patch:typescript@npm%3A4.8.3#~builtin<compat/typescript>::version=4.8.3&hash=f456af"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
@@ -7845,7 +7846,7 @@ __metadata:
 
 "typescript@patch:typescript@^4.7.4#~builtin<compat/typescript>":
   version: 4.8.4
-  resolution: "typescript@patch:typescript@npm%3A4.8.4#~builtin<compat/typescript>::version=4.8.4&hash=7ad353"
+  resolution: "typescript@patch:typescript@npm%3A4.8.4#~builtin<compat/typescript>::version=4.8.4&hash=f456af"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver

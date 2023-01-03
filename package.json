@@ -34,5 +34,8 @@
     "packageManager": "yarn@3.2.1",
     "dependencies": {
         "typescript": "^4.8.3"
+    },
+    "devDependencies": {
+        "ts-node": "^10.9.1"
     }
 }

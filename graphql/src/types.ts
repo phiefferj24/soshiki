@@ -306,10 +306,10 @@ export type EmbeddedHistoryEntry = {
   chapter?: Maybe<Scalars['Float']>;
   episode?: Maybe<Scalars['Float']>;
   id: Scalars['ID'];
-  lastTime?: Maybe<Scalars['Int']>;
+  lastTime?: Maybe<Scalars['Float']>;
   page?: Maybe<Scalars['Int']>;
   rating?: Maybe<Scalars['Float']>;
-  startTime?: Maybe<Scalars['Int']>;
+  startTime?: Maybe<Scalars['Float']>;
   status?: Maybe<TrackerStatus>;
   timestamp?: Maybe<Scalars['Int']>;
   trackerIds?: Maybe<Array<Maybe<Tracker>>>;
@@ -353,10 +353,10 @@ export type HistoryEntry = {
   entry?: Maybe<Entry>;
   episode?: Maybe<Scalars['Float']>;
   id: Scalars['ID'];
-  lastTime?: Maybe<Scalars['Int']>;
+  lastTime?: Maybe<Scalars['Float']>;
   page?: Maybe<Scalars['Int']>;
   rating?: Maybe<Scalars['Float']>;
-  startTime?: Maybe<Scalars['Int']>;
+  startTime?: Maybe<Scalars['Float']>;
   status?: Maybe<TrackerStatus>;
   timestamp?: Maybe<Scalars['Int']>;
   trackerIds?: Maybe<Array<Maybe<UserTracker>>>;
@@ -464,33 +464,28 @@ export enum MediaType {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  AddHistoryEntry?: Maybe<History>;
+  AddLibraryCategories?: Maybe<Library>;
   AddLibraryCategory?: Maybe<Library>;
   AddLibraryItem?: Maybe<Library>;
   AddLibraryItemToCategory?: Maybe<Library>;
+  AddLibraryItems?: Maybe<Library>;
+  AddLibraryItemsToCategory?: Maybe<Library>;
   RemoveHistoryEntry?: Maybe<History>;
+  RemoveLibraryCategories?: Maybe<Library>;
   RemoveLibraryCategory?: Maybe<Library>;
   RemoveLibraryItem?: Maybe<Library>;
   RemoveLibraryItemFromCategory?: Maybe<Library>;
+  RemoveLibraryItems?: Maybe<Library>;
+  RemoveLibraryItemsFromCategory?: Maybe<Library>;
   RemoveLink?: Maybe<EntryConnection>;
   SetHistoryEntry?: Maybe<HistoryEntry>;
   SetLink?: Maybe<EntryConnection>;
 };
 
 
-export type MutationAddHistoryEntryArgs = {
-  chapter?: InputMaybe<Scalars['Float']>;
-  episode?: InputMaybe<Scalars['Float']>;
-  id: Scalars['ID'];
-  lastTime?: InputMaybe<Scalars['Int']>;
+export type MutationAddLibraryCategoriesArgs = {
   mediaType: MediaType;
-  page?: InputMaybe<Scalars['Int']>;
-  rating?: InputMaybe<Scalars['Float']>;
-  startTime?: InputMaybe<Scalars['Int']>;
-  status?: InputMaybe<TrackerStatus>;
-  timestamp?: InputMaybe<Scalars['Int']>;
-  trackers?: InputMaybe<Array<UserTrackerInput>>;
-  volume?: InputMaybe<Scalars['Float']>;
+  names: Array<Scalars['String']>;
 };
 
 
@@ -514,9 +509,29 @@ export type MutationAddLibraryItemToCategoryArgs = {
 };
 
 
+export type MutationAddLibraryItemsArgs = {
+  category?: InputMaybe<Scalars['String']>;
+  ids: Array<Scalars['ID']>;
+  mediaType: MediaType;
+};
+
+
+export type MutationAddLibraryItemsToCategoryArgs = {
+  category: Scalars['String'];
+  ids: Array<Scalars['ID']>;
+  mediaType: MediaType;
+};
+
+
 export type MutationRemoveHistoryEntryArgs = {
   id: Scalars['ID'];
   mediaType: MediaType;
+};
+
+
+export type MutationRemoveLibraryCategoriesArgs = {
+  mediaType: MediaType;
+  names: Array<Scalars['String']>;
 };
 
 
@@ -539,6 +554,19 @@ export type MutationRemoveLibraryItemFromCategoryArgs = {
 };
 
 
+export type MutationRemoveLibraryItemsArgs = {
+  ids: Array<Scalars['ID']>;
+  mediaType: MediaType;
+};
+
+
+export type MutationRemoveLibraryItemsFromCategoryArgs = {
+  category: Scalars['String'];
+  ids: Array<Scalars['ID']>;
+  mediaType: MediaType;
+};
+
+
 export type MutationRemoveLinkArgs = {
   id: Scalars['ID'];
   mediaType: MediaType;
@@ -551,11 +579,11 @@ export type MutationSetHistoryEntryArgs = {
   chapter?: InputMaybe<Scalars['Float']>;
   episode?: InputMaybe<Scalars['Float']>;
   id: Scalars['ID'];
-  lastTime?: InputMaybe<Scalars['Int']>;
+  lastTime?: InputMaybe<Scalars['Float']>;
   mediaType: MediaType;
   page?: InputMaybe<Scalars['Int']>;
   rating?: InputMaybe<Scalars['Float']>;
-  startTime?: InputMaybe<Scalars['Int']>;
+  startTime?: InputMaybe<Scalars['Float']>;
   status?: InputMaybe<TrackerStatus>;
   timestamp?: InputMaybe<Scalars['Int']>;
   trackers?: InputMaybe<Array<UserTrackerInput>>;
@@ -1121,10 +1149,10 @@ export type EmbeddedHistoryEntryResolvers<ContextType = any, ParentType extends 
   chapter?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   episode?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  lastTime?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  lastTime?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   page?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   rating?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
-  startTime?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  startTime?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   status?: Resolver<Maybe<ResolversTypes['TrackerStatus']>, ParentType, ContextType>;
   timestamp?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   trackerIds?: Resolver<Maybe<Array<Maybe<ResolversTypes['Tracker']>>>, ParentType, ContextType>;
@@ -1168,10 +1196,10 @@ export type HistoryEntryResolvers<ContextType = any, ParentType extends Resolver
   entry?: Resolver<Maybe<ResolversTypes['Entry']>, ParentType, ContextType>;
   episode?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  lastTime?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  lastTime?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   page?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   rating?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
-  startTime?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  startTime?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   status?: Resolver<Maybe<ResolversTypes['TrackerStatus']>, ParentType, ContextType>;
   timestamp?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   trackerIds?: Resolver<Maybe<Array<Maybe<ResolversTypes['UserTracker']>>>, ParentType, ContextType>;
@@ -1273,14 +1301,19 @@ export type MalUserResolvers<ContextType = any, ParentType extends ResolversPare
 }>;
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = ResolversObject<{
-  AddHistoryEntry?: Resolver<Maybe<ResolversTypes['History']>, ParentType, ContextType, RequireFields<MutationAddHistoryEntryArgs, 'id' | 'mediaType'>>;
+  AddLibraryCategories?: Resolver<Maybe<ResolversTypes['Library']>, ParentType, ContextType, RequireFields<MutationAddLibraryCategoriesArgs, 'mediaType' | 'names'>>;
   AddLibraryCategory?: Resolver<Maybe<ResolversTypes['Library']>, ParentType, ContextType, RequireFields<MutationAddLibraryCategoryArgs, 'mediaType' | 'name'>>;
   AddLibraryItem?: Resolver<Maybe<ResolversTypes['Library']>, ParentType, ContextType, RequireFields<MutationAddLibraryItemArgs, 'id' | 'mediaType'>>;
   AddLibraryItemToCategory?: Resolver<Maybe<ResolversTypes['Library']>, ParentType, ContextType, RequireFields<MutationAddLibraryItemToCategoryArgs, 'category' | 'id' | 'mediaType'>>;
+  AddLibraryItems?: Resolver<Maybe<ResolversTypes['Library']>, ParentType, ContextType, RequireFields<MutationAddLibraryItemsArgs, 'ids' | 'mediaType'>>;
+  AddLibraryItemsToCategory?: Resolver<Maybe<ResolversTypes['Library']>, ParentType, ContextType, RequireFields<MutationAddLibraryItemsToCategoryArgs, 'category' | 'ids' | 'mediaType'>>;
   RemoveHistoryEntry?: Resolver<Maybe<ResolversTypes['History']>, ParentType, ContextType, RequireFields<MutationRemoveHistoryEntryArgs, 'id' | 'mediaType'>>;
+  RemoveLibraryCategories?: Resolver<Maybe<ResolversTypes['Library']>, ParentType, ContextType, RequireFields<MutationRemoveLibraryCategoriesArgs, 'mediaType' | 'names'>>;
   RemoveLibraryCategory?: Resolver<Maybe<ResolversTypes['Library']>, ParentType, ContextType, RequireFields<MutationRemoveLibraryCategoryArgs, 'mediaType' | 'name'>>;
   RemoveLibraryItem?: Resolver<Maybe<ResolversTypes['Library']>, ParentType, ContextType, RequireFields<MutationRemoveLibraryItemArgs, 'id' | 'mediaType'>>;
   RemoveLibraryItemFromCategory?: Resolver<Maybe<ResolversTypes['Library']>, ParentType, ContextType, RequireFields<MutationRemoveLibraryItemFromCategoryArgs, 'category' | 'id' | 'mediaType'>>;
+  RemoveLibraryItems?: Resolver<Maybe<ResolversTypes['Library']>, ParentType, ContextType, RequireFields<MutationRemoveLibraryItemsArgs, 'ids' | 'mediaType'>>;
+  RemoveLibraryItemsFromCategory?: Resolver<Maybe<ResolversTypes['Library']>, ParentType, ContextType, RequireFields<MutationRemoveLibraryItemsFromCategoryArgs, 'category' | 'ids' | 'mediaType'>>;
   RemoveLink?: Resolver<Maybe<ResolversTypes['EntryConnection']>, ParentType, ContextType, RequireFields<MutationRemoveLinkArgs, 'id' | 'mediaType' | 'platform' | 'source'>>;
   SetHistoryEntry?: Resolver<Maybe<ResolversTypes['HistoryEntry']>, ParentType, ContextType, RequireFields<MutationSetHistoryEntryArgs, 'id' | 'mediaType'>>;
   SetLink?: Resolver<Maybe<ResolversTypes['EntryConnection']>, ParentType, ContextType, RequireFields<MutationSetLinkArgs, 'id' | 'mediaType' | 'platform' | 'source' | 'sourceId'>>;
