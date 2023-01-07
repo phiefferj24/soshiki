@@ -12,7 +12,9 @@
         "types",
         "manifest",
         "discord",
-        "graphql"
+        "graphql",
+        "database-new",
+        "api-new"
     ],
     "scripts": {
         "site:dev": "yarn workspace soshiki-site dev",

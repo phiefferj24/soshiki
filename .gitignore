@@ -7,3 +7,5 @@ node_modules/
 .env
 *manifest.json
 **/.env
+**/*.key*
+database-new/MAL-Sync-Backup

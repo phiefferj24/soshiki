@@ -1,0 +1,16 @@
+{
+  "name": "database-new",
+  "packageManager": "yarn@3.2.2",
+  "main": "./src/index.ts",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "updater": "ts-node src/updater.ts"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1"
+  },
+  "dependencies": {
+    "mongodb": "^4.13.0",
+    "uuid-mongodb": "^2.5.3"
+  }
+}
