@@ -8,7 +8,7 @@ const EMAIL_REGEX = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|
 
 export default new Command({
     type: ApplicationCommandType.ChatInput,
-    ownersOnly: true,
+    ownersOnly: false,
     name: "testflight",
     description: "Sends the TestFlight invite message"
 }).addHandler('button', async (bot, int) => {
