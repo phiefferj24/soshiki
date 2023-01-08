@@ -1,5 +1,5 @@
 {
-  "name": "database-new",
+  "name": "soshiki-database-new",
   "packageManager": "yarn@3.2.2",
   "main": "./src/index.ts",
   "scripts": {

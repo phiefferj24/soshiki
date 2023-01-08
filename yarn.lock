@@ -3617,17 +3617,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"api-new@workspace:api-new":
-  version: 0.0.0-use.local
-  resolution: "api-new@workspace:api-new"
-  dependencies:
-    express: ^4.18.2
-    jsonwebtoken: ^9.0.0
-    ts-node: ^10.9.1
-    uuid-mongodb: ^2.5.3
-  languageName: unknown
-  linkType: soft
-
 "aproba@npm:^1.0.3 || ^2.0.0":
   version: 2.0.0
   resolution: "aproba@npm:2.0.0"
@@ -3895,16 +3884,6 @@ __metadata:
   checksum: 3e25c80ef626c3a3487c73dbfc70ac322ec830666c9ad915d11b701142fab25ec1e63eff2c450c74347acfd2de854ccde865cd79ef4db1683f7c7b046ea43bb0
   languageName: node
   linkType: hard
-
-"bot@workspace:bot":
-  version: 0.0.0-use.local
-  resolution: "bot@workspace:bot"
-  dependencies:
-    jsonwebtoken: ^9.0.0
-    meinu: ^5.4.9
-    vite-node: ^0.26.3
-  languageName: unknown
-  linkType: soft
 
 "bowser@npm:^2.11.0":
   version: 2.11.0
@@ -4562,16 +4541,6 @@ __metadata:
   checksum: a010653869abe8bb51259432894ac62c52bf79ad761d418d94396f48c346f2ae739c46b254e8bb5987bded8a653d467db1968db3a69bab1d33aa5567baa5cfc7
   languageName: node
   linkType: hard
-
-"database-new@workspace:database-new":
-  version: 0.0.0-use.local
-  resolution: "database-new@workspace:database-new"
-  dependencies:
-    mongodb: ^4.13.0
-    ts-node: ^10.9.1
-    uuid-mongodb: ^2.5.3
-  languageName: unknown
-  linkType: soft
 
 "dataloader@npm:2.1.0":
   version: 2.1.0
@@ -8740,6 +8709,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"soshiki-api-new@workspace:api-new":
+  version: 0.0.0-use.local
+  resolution: "soshiki-api-new@workspace:api-new"
+  dependencies:
+    express: ^4.18.2
+    jsonwebtoken: ^9.0.0
+    ts-node: ^10.9.1
+    uuid-mongodb: ^2.5.3
+  languageName: unknown
+  linkType: soft
+
 "soshiki-api@workspace:api":
   version: 0.0.0-use.local
   resolution: "soshiki-api@workspace:api"
@@ -8751,6 +8731,26 @@ __metadata:
     dotenv: ^16.0.1
     express: ^4.18.1
     jikan4.js: ^1.1.0
+  languageName: unknown
+  linkType: soft
+
+"soshiki-bot@workspace:bot":
+  version: 0.0.0-use.local
+  resolution: "soshiki-bot@workspace:bot"
+  dependencies:
+    jsonwebtoken: ^9.0.0
+    meinu: ^5.4.9
+    vite-node: ^0.26.3
+  languageName: unknown
+  linkType: soft
+
+"soshiki-database-new@workspace:database-new":
+  version: 0.0.0-use.local
+  resolution: "soshiki-database-new@workspace:database-new"
+  dependencies:
+    mongodb: ^4.13.0
+    ts-node: ^10.9.1
+    uuid-mongodb: ^2.5.3
   languageName: unknown
   linkType: soft
 

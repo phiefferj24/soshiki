@@ -1,5 +1,5 @@
 import express from "express"
-import { Database, User } from "database-new"
+import { Database, User } from "soshiki-database-new"
 import { Entry, History, LibraryCategory, MediaType } from "soshiki-types"
 import MUUID from "uuid-mongodb"
 import { config } from "dotenv"

@@ -1,7 +1,7 @@
 import { Meinu } from "meinu"
 import { config } from "dotenv"
 import testflight from "./cmds/testflight.js"
-import { Database } from "database-new"
+import { Database } from "soshiki-database-new"
 
 config()
 
