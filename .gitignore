@@ -8,4 +8,5 @@ node_modules/
 *manifest.json
 **/.env
 **/*.key*
+**/*.p8
 database-new/MAL-Sync-Backup

@@ -6,6 +6,12 @@ import crypto from "crypto"
 
 config();
 
+export type TestflightUser = {
+    discord: string,
+    email: string,
+    id: string
+}
+
 type EntryCollections = {
     text: Collection,
     image: Collection,
@@ -66,12 +72,14 @@ export type DatabaseUser = {
 export class Database {
     entries: EntryCollections
     users: Collection
+    testflight: Collection
     client: MongoClient
 
-    private constructor(client: MongoClient, entries: EntryCollections, users: Collection) {
+    private constructor(client: MongoClient, entries: EntryCollections, users: Collection, testflight: Collection) {
         this.client = client
         this.entries = entries
         this.users = users
+        this.testflight = testflight
     }
 
     static async connect(): Promise<Database> {
@@ -85,7 +93,7 @@ export class Database {
             text: db.collection(process.env.TEXT_COLLECTION_NAME!),
             image: db.collection(process.env.IMAGE_COLLECTION_NAME!),
             video: db.collection(process.env.VIDEO_COLLECTION_NAME!)
-        }, db.collection(process.env.USERS_COLLECTION_NAME!))
+        }, db.collection(process.env.USERS_COLLECTION_NAME!), db.collection(process.env.TESTFLIGHT_COLLECTION_NAME!))
     }
 
     collectionForType(mediaType: MediaType): Collection {
@@ -140,6 +148,24 @@ export class Database {
 
     async aggregateDatabaseEntries(pipeline: {[key: string]: any}[], mediaType: MediaType, limit: number = 100, skip: number = 0): Promise<DatabaseEntry[]> {
         return (await this.collectionForType(mediaType).aggregate(pipeline).skip(skip).limit(limit).toArray()) as any as DatabaseEntry[]
+    }
+
+    async getTestflightUser(discord: string | undefined, id: string | undefined): Promise<TestflightUser | null> {
+        const query: {[key: string]: string} = {}
+        if (typeof discord === 'string') query['discord'] = discord
+        if (typeof id === 'string') query['id'] = id
+        return await this.testflight.findOne(query) as any as TestflightUser
+    }
+
+    async addTestflightUser(discord: string, email: string, id: string): Promise<void> {
+        await this.testflight.insertOne({ discord, email, id })
+    }
+
+    async removeTestflightUser(discord: string | undefined, id: string | undefined): Promise<void> {
+        const query: {[key: string]: string} = {}
+        if (typeof discord === 'string') query['discord'] = discord
+        if (typeof id === 'string') query['id'] = id
+        await this.testflight.deleteOne(query)
     }
 
     async close() {

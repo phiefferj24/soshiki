@@ -14,7 +14,8 @@
         "discord",
         "graphql",
         "database-new",
-        "api-new"
+        "api-new",
+        "bot"
     ],
     "scripts": {
         "site:dev": "yarn workspace soshiki-site dev",
