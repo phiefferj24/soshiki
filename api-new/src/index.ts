@@ -189,7 +189,8 @@ function isValidContentRating(contentRating: string) {
                     entry.platforms[platformIndex].sources[sourceIndex] = newLink
                 }
             }
-            res.status(200).send(entry)
+            await database.setDatabaseEntry(mediaType(req.params.mediaType)!, entry)
+            res.status(200).send()
         } catch(error) {
             if (error instanceof jwt.TokenExpiredError) res.status(401).send("Token has expired.")
             else if (error instanceof jwt.NotBeforeError) res.status(401).send("Token is not active.")
@@ -268,6 +269,7 @@ function isValidContentRating(contentRating: string) {
                 case 'volume': if (typeof param[1] === 'string' && !isNaN(parseFloat(param[1]))) newHistory.volume = parseFloat(param[1]); break
                 case 'timestamp': if (typeof param[1] === 'string' && !isNaN(parseInt(param[1]))) newHistory.timestamp = parseInt(param[1]); break
                 case 'episode': if (typeof param[1] === 'string' && !isNaN(parseFloat(param[1]))) newHistory.episode = parseFloat(param[1]); break
+                case 'percent': if (typeof param[1] === 'string' && !isNaN(parseFloat(param[1]))) newHistory.percent = parseFloat(param[1]); break
                 case 'score': if (typeof param[1] === 'string' && !isNaN(parseFloat(param[1]))) newHistory.score = parseFloat(param[1]); break
                 case 'status': if (typeof param[1] === 'string' && isValidHistoryStatus(param[1])) newHistory.status = param[1].toUpperCase()
             }

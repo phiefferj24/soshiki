@@ -15,7 +15,8 @@
         "graphql",
         "database-new",
         "api-new",
-        "bot"
+        "bot",
+        "notifications"
     ],
     "scripts": {
         "site:dev": "yarn workspace soshiki-site dev",
@@ -34,7 +35,8 @@
         "graphql": "yarn workspace soshiki-graphql start",
         "graphql:dev": "yarn workspace soshiki-graphql dev",
         "api-new": "yarn workspace soshiki-api-new start",
-        "bot": "yarn workspace soshiki-bot start"
+        "bot": "yarn workspace soshiki-bot start",
+        "notifications": "yarn workspace soshiki-notifications start"
     },
     "packageManager": "yarn@3.2.1",
     "dependencies": {

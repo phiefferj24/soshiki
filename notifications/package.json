@@ -1,0 +1,14 @@
+{
+  "name": "soshiki-notifications",
+  "packageManager": "yarn@3.2.2",
+  "scripts": {
+    "start": "vite-node src/index.ts"
+  },
+  "type": "module",
+  "devDependencies": {
+    "vite-node": "^0.27.1"
+  },
+  "dependencies": {
+    "uuid-mongodb": "^2.5.3"
+  }
+}

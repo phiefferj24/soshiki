@@ -135,7 +135,7 @@ export class Database {
     }
 
     async setDatabaseEntry(mediaType: MediaType, entry: DatabaseEntry) {
-
+        await this.collectionForType(mediaType).updateOne({ _id: entry._id }, { $set: entry })
     }
 
     async getDatabaseEntry(query: {[key: string]: any}, mediaType: MediaType): Promise<DatabaseEntry | null> {

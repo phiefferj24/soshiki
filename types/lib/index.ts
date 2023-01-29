@@ -156,6 +156,8 @@ export type Entry = {
     title: string,
     /** Alternative titles for the entry. */
     alternativeTitles: Entry.AlternativeTitle[],
+    /** A description of the entry. */
+    description?: string,
     /** Staff for the entry. This includes authors, artists, voice actors, et cetera. */
     staff: Entry.Staff[],
     /** A list of covers for the entry in different qualities. */
@@ -289,6 +291,8 @@ export type History = {
     timestamp?: number,
     /** The episode that the user is currently on, if applicable. */
     episode?: number,
+    /** The percent of the text that has been read, if applicable. */
+    percent?: number,
     /** The score that the user has given the entry, if one has been given. */
     score?: number,
     /** The watching or reading status of the entry. */
