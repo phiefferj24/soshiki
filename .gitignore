@@ -9,4 +9,5 @@ node_modules/
 **/.env
 **/*.key*
 **/*.p8
+**/*.token
 database-new/MAL-Sync-Backup

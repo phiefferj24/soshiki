@@ -238,7 +238,9 @@ export namespace Entry {
         /** The internal ID for the source entry that corresponds to the entry. */
         entryId: string,
         /** The user that linked the source entry, if it was a user. */
-        user?: string
+        user?: string,
+        /** The lastest chapter/episode ID for the entry. */
+        latestId?: string
     }
 
     export type Tracker = {

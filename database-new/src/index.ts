@@ -56,7 +56,9 @@ export type User = {
     isHistoryPublic: boolean,
     libraries?: Libraries,
     isLibraryPublic: boolean,
-    connections?: Connection[]
+    connections?: Connection[],
+    devices?: Device[],
+    trackers?: UserTrackers
 }
 
 export type DatabaseUser = {
@@ -66,7 +68,37 @@ export type DatabaseUser = {
     isHistoryPublic: boolean,
     libraries: Libraries,
     isLibraryPublic: boolean,
-    connections: Connection[]
+    connections: Connection[],
+    devices?: Device[],
+    trackers?: UserTrackers
+}
+
+export type Device = {
+    id: string,
+    badge: number,
+    notifications: UserNotifications
+}
+
+export type UserNotifications = {
+    text: UserNotification[],
+    image: UserNotification[],
+    video: UserNotification[]
+}
+
+export type UserNotification = {
+    id: string,
+    source: string
+}
+
+export type UserTrackers = {
+    text: UserTracker[],
+    image: UserTracker[],
+    video: UserTracker[]
+}
+
+export type UserTracker = {
+    id: string
+    entryId: string
 }
 
 export class Database {
@@ -105,16 +137,18 @@ export class Database {
     }
 
     async addUser(discord: string): Promise<DatabaseUser> {
-        const user = {
+        const user: DatabaseUser = {
             _id: MUUID.from(crypto.randomUUID()) as any,
             discord,
             histories: { text: [], image: [], video: [] },
             isHistoryPublic: false,
             libraries: { text: { all: { ids: [] }, categories: [] }, image: { all: { ids: [] }, categories: [] }, video: { all: { ids: [] }, categories: [] } },
             isLibraryPublic: false,
-            connections: []
+            connections: [],
+            devices: [],
+            trackers: { text: [], image: [], video: [] }
         }
-        await this.users.insertOne(user)
+        await this.users.insertOne(user as any)
         return user
     }
 

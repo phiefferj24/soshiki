@@ -1,5 +1,5 @@
 import express from "express"
-import { Database, User } from "soshiki-database-new"
+import { Database, User, UserNotification, UserTracker } from "soshiki-database-new"
 import { Entry, History, LibraryCategory, MediaType } from "soshiki-types"
 import MUUID from "uuid-mongodb"
 import { config } from "dotenv"
@@ -213,6 +213,8 @@ function isValidContentRating(contentRating: string) {
         if ((!isReferencingSelf && !user.isHistoryPublic) || !includes.includes('history')) delete user.histories
         if ((!isReferencingSelf && !user.isLibraryPublic) || !includes.includes('library')) delete user.libraries
         if (!isReferencingSelf || !includes.includes('connections')) delete user.connections
+        if (!isReferencingSelf || !includes.includes('devices')) delete user.devices
+        if (!isReferencingSelf || !includes.includes('trackers')) delete user.trackers
         res.status(200).send({ ...user, _id: user._id.toString() })
     })
 }
@@ -549,6 +551,156 @@ function isValidContentRating(contentRating: string) {
             else if (error instanceof jwt.JsonWebTokenError) res.status(401).send("Token is invalid.")
             else res.status(500).send()
         }
+    })
+}
+
+{ // notifications
+    app.put("/notifications/:id", async (req, res) => {
+        let user = await database.getUser({ _id: MUUID.from((req as any).userId) })
+        if (user === null) {
+            res.status(500).send()
+            return
+        }
+        if (typeof user.devices === 'undefined') {
+            user.devices = []
+        }
+        if (!user.devices.some(device => device.id === req.params.id)) {
+            user.devices.push({
+                id: req.params.id,
+                badge: 0,
+                notifications: { text: [], image: [], video: [] }
+            })
+        }
+        await database.setUser(user)
+        res.status(200).send()
+    })
+
+    app.delete("/notifications/:id", async (req, res) => {
+        let user = await database.getUser({ _id: MUUID.from((req as any).userId) })
+        if (user === null) {
+            res.status(500).send()
+            return
+        }
+        const idIndex = user.devices?.findIndex(device => device.id === req.params.id)
+        if (typeof idIndex === 'number' && idIndex !== -1) {
+            user.devices?.splice(idIndex, 1)
+        }
+        await database.setUser(user)
+        res.status(200).send()
+    })
+
+    app.put("/notifications/:id/badge/:count", async (req, res) => {
+        const count = parseInt(req.params.count)
+        if (typeof count !== 'number' || isNaN(count)) {
+            res.status(400).send("Invalid badge count.")
+            return
+        }
+        let user = await database.getUser({ _id: MUUID.from((req as any).userId) })
+        if (user === null) {
+            res.status(500).send()
+            return
+        }
+        const idIndex = user.devices?.findIndex(device => device.id === req.params.id) ?? -1
+        if (typeof user.devices !== 'undefined' && idIndex !== -1) {
+            user.devices[idIndex].badge = count
+        }
+        await database.setUser(user)
+        res.status(200).send()
+    })
+
+    app.put("/notifications/:id/:mediaType/:entryId/:sourceId", async (req, res) => {
+        let user = await database.getUser({ _id: MUUID.from((req as any).userId) })
+        if (user === null) {
+            res.status(500).send()
+            return
+        }
+        if (typeof user.devices === 'undefined') {
+            user.devices = []
+        }
+        const deviceIndex = user.devices!.findIndex(device => device.id === req.params.id)
+        if (deviceIndex === -1) {
+            let device = {
+                id: req.params.entryId,
+                badge: 0,
+                notifications: { text: [], image: [], video: [] }
+            };
+            (device as any).notifications[req.params.mediaType.toLowerCase()].push({
+                id: req.params.entryId,
+                source: req.params.sourceId
+            })
+            user.devices.push(device)
+        } else {
+            const notificationIndex = (user.devices![deviceIndex].notifications as any)[req.params.mediaType].findIndex((notification: UserNotification) => notification.id === req.params.entryId)
+            if (notificationIndex === -1) {
+                (user.devices![deviceIndex].notifications as any)[req.params.mediaType].push({
+                    id: req.params.entryId,
+                    source: req.params.sourceId
+                })
+            } else {
+                (user.devices![deviceIndex].notifications as any)[req.params.mediaType][notificationIndex].source = req.params.sourceId
+            }
+        }
+        await database.setUser(user)
+        res.status(200).send()
+    })
+
+    app.delete("/notifications/:id/:mediaType/:entryId", async (req, res) => {
+        let user = await database.getUser({ _id: MUUID.from((req as any).userId) })
+        if (user === null) {
+            res.status(500).send()
+            return
+        }
+        if (typeof user.devices === 'undefined') {
+            user.devices = []
+        }
+        const deviceIndex = user.devices!.findIndex(device => device.id === req.params.id)
+        if (deviceIndex !== -1) {
+            const entryIndex = (user.devices![deviceIndex] as any).notifications[req.params.mediaType.toLowerCase()].findIndex((notification: UserNotification) => notification.id === req.params.entryId)
+            if (entryIndex !== -1) {
+                (user.devices![deviceIndex] as any).notifications[req.params.mediaType.toLowerCase()].splice(entryIndex, 1)
+            }
+        }
+        await database.setUser(user)
+        res.status(200).send()
+    })
+}
+
+{ // trackers
+    app.put("/trackers/:mediaType/:id/:trackerId", async (req, res) => {
+        let user = await database.getUser({ _id: MUUID.from((req as any).userId) })
+        if (user === null) {
+            res.status(500).send()
+            return
+        }
+        if (typeof user.trackers === 'undefined') {
+            user.trackers = { text: [], image: [], video: [] }
+        }
+        const trackerIndex = (user.trackers as any)[req.params.mediaType.toLowerCase()].findIndex((tracker: UserTracker) => tracker.entryId === req.params.id && tracker.id === req.params.trackerId)
+        if (trackerIndex === -1) {
+            (user.trackers as any)[req.params.mediaType.toLowerCase()].push({
+                entryId: req.params.id,
+                id: req.params.trackerId
+            })
+        }
+        await database.setUser(user)
+        res.status(200).send()
+    })
+
+    app.delete("/trackers/:mediaType/:id/:trackerId", async (req, res) => {
+        let user = await database.getUser({ _id: MUUID.from((req as any).userId) })
+        if (user === null) {
+            res.status(500).send()
+            return
+        }
+        if (typeof user.trackers === 'undefined') {
+            user.trackers = { text: [], image: [], video: [] }
+        }
+        const trackerIndex = (user.trackers as any)[req.params.mediaType.toLowerCase()].findIndex((tracker: UserTracker) => tracker.entryId === req.params.id && tracker.id === req.params.trackerId)
+        if (trackerIndex !== -1) {
+            (user.trackers as any)[req.params.mediaType.toLowerCase()].splice(trackerIndex, 1)
+        }
+        await database.setUser(user)
+        res.status(200).send()
     })
 }
 
