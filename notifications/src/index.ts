@@ -499,7 +499,7 @@ function startupApnToken() {
 }
 startupApnToken()
 
-const notificationClient = http2.connect('https://api.sandbox.push.apple.com:443')
+const notificationClient = http2.connect('https://api.push.apple.com:443')
 type PostNotificationOptions = {
     device: string, 
     source: string,
