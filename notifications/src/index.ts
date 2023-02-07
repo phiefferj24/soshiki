@@ -303,7 +303,7 @@ let elementReferences: {[key: string]: {element: Element, reference: string}} = 
         headers: {[key: string]: string}
     }
     (globalThis as any)["__fetch__"] = (url: string, options: { body?: string, headers?: {[key: string]: string}, method?: string }, resolve: (value: SoshikiResponse) => void, reject: (reason?: any) => void) => {
-        fetch(url, { ...options }).then(async res => {
+        fetch(`${url}`, { ...options }).then(async res => {
             let headers: {[key: string]: string} = {}
             for (const header of res.headers) {
                 headers[header[0]] = header[1]
@@ -413,8 +413,9 @@ async function listen(mediaType: MediaType, source: string): Promise<void> {
         console.log(`${entries.length} entries found.`)
 
         let index = 0
-        await new Promise(async (resolve) => {
+        await new Promise((resolve) => {
             const intervalId = setInterval(async () => {
+                console.log(`${source}: Iteration ${index + 1} of ${sourceEntries.length}`)
                 const item = sourceEntries[index]
                 if (typeof item === 'undefined') {
                     return
