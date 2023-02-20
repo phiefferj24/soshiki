@@ -8,7 +8,7 @@ import { readFileSync } from "fs"
 import { join } from "path"
 import fetch from "node-fetch"
 
-const CURRENT_URL = 'https://api.soshiki.moe'
+const CURRENT_URL = 'http://localhost:3604' // 'https://api.soshiki.moe'
 
 const PUBLIC_PATHS = ["/entry", "/oauth2", "/user"]
 const PUBLIC_PATH_OVERRIDES = ["/user/me"]
@@ -512,12 +512,17 @@ function isValidContentRating(contentRating: string) {
                 res.status(401).send("Incorrect bearer token provided.")
                 return
             }
+            let params = new URLSearchParams()
+            params.append("grant_type", "refresh_token")
+            params.append("refresh_token", verified.refresh)
+            params.append("client_id", manifest.discord.client.id!)
+            params.append("client_secret", manifest.discord.client.secret!)
             const data = await fetch(`https://discord.com/api/oauth2/token`, {
                 method: 'POST',
+                body: params,
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
+                    'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `grant_type=refresh_token&refresh_token=${verified.refresh}&client_id=${manifest.discord.client.id!}&client_secret=${manifest.discord.client.secret!}`
             }).then(res => res.json())
             const user = await fetch(`https://discord.com/api/users/@me`, { headers: { Authorization: `Bearer ${data.access_token}` } }).then(res => res.json())
             let dbUser = await database.getUser({ discord: user.id })

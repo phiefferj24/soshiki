@@ -499,7 +499,7 @@ function startupApnToken() {
 }
 startupApnToken()
 
-const notificationClient = http2.connect('https://api.push.apple.com:443')
+let notificationClient = http2.connect('https://api.push.apple.com:443')
 type PostNotificationOptions = {
     device: string, 
     source: string,
@@ -538,21 +538,11 @@ async function postNotification(options: PostNotificationOptions) {
         "Content-Type": "application/json",
         "Content-Length": reqBody.length
     })
+    req.on('error', () => {
+        notificationClient.destroy()
+        notificationClient = http2.connect('https://api.push.apple.com:443')
+    })
     req.setEncoding('utf8')
     req.write(reqBody)
     req.end()
 }
-
-
-
-
-
-
-
-
-// const nonUniqueVideo = users.map(user => {
-//     return user.libraries.video.all.ids
-// }).flat()
-// console.log(`${nonUniqueVideo.length} non-unique video entries.`)
-// const uniqueVideo = nonUniqueVideo.filter((value, index) => nonUniqueVideo.indexOf(value) === index)
-// console.log(`${uniqueVideo.length} unique video entries.`)
