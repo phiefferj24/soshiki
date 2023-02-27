@@ -6,6 +6,7 @@ import { ImageMappers, MalSyncLink, VideoMappers, TextMappers } from "./maps"
 import objectEquals from "deep-equal"
 import { MUUID } from "uuid-mongodb"
 import progress from "cli-progress"
+import fetch from "node-fetch"
 
 // update().then(() => {process.exit(0)})
 individualUpdate().then(() => {process.exit(0)})
