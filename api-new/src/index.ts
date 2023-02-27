@@ -8,7 +8,7 @@ import { readFileSync } from "fs"
 import { join } from "path"
 import fetch from "node-fetch"
 
-const CURRENT_URL = 'http://localhost:3604' // 'https://api.soshiki.moe'
+const CURRENT_URL = 'https://api.soshiki.moe'
 
 const PUBLIC_PATHS = ["/entry", "/oauth2", "/user"]
 const PUBLIC_PATH_OVERRIDES = ["/user/me"]

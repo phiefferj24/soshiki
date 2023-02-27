@@ -36,7 +36,8 @@
         "graphql:dev": "yarn workspace soshiki-graphql dev",
         "api-new": "yarn workspace soshiki-api-new start",
         "bot": "yarn workspace soshiki-bot start",
-        "notifications": "yarn workspace soshiki-notifications start"
+        "notifications": "yarn workspace soshiki-notifications start",
+        "updater-new": "yarn workspace soshiki-database-new updater"
     },
     "packageManager": "yarn@3.2.1",
     "dependencies": {
