@@ -7,249 +7,13 @@ import objectEquals from "deep-equal"
 import { MUUID } from "uuid-mongodb"
 import progress from "cli-progress"
 
-async function updateFresh() {
-    const db = await Database.connect()
+// update().then(() => {process.exit(0)})
+individualUpdate().then(() => {process.exit(0)})
 
-    const REPO_URL = "https://github.com/MALSync/MAL-Sync-Backup.git";
-
-    console.log("Cloning repo");
-    if (!readdirSync("./").includes("MAL-Sync-Backup")) {
-        spawnSync("git", ["clone", REPO_URL]);
-        console.log("Cloned repo");
-    } else {
-        console.log("Repo already cloned");
-    }
-    let textEntries: Entry[] = [];
-    let imageEntries: Entry[] = [];
-    let videoEntries: Entry[] = [];
-    console.log("Reading directories");
-    let malMangaFiles = JSON.parse(readFileSync("./MAL-Sync-Backup/data/myanimelist/manga/_index.json", "utf8"));
-    let malAnimeFiles = JSON.parse(readFileSync("./MAL-Sync-Backup/data/myanimelist/anime/_index.json", "utf8"));
-    let alMangaFiles = JSON.parse(readFileSync("./MAL-Sync-Backup/data/anilist/manga/_index.json", "utf8"));
-    let alAnimeFiles = JSON.parse(readFileSync("./MAL-Sync-Backup/data/anilist/anime/_index.json", "utf8"));
-    console.log("Read directories");
-    console.log("Total MAL manga files: " + malMangaFiles.length);
-    console.log("Total MAL anime files: " + malAnimeFiles.length);
-    console.log("Total AL manga files: " + alMangaFiles.length);
-    console.log("Total AL anime files: " + alAnimeFiles.length);
-    console.log("Reading anime files...");
-    for (const alAnimeFile of alAnimeFiles) {
-        const alData = JSON.parse(readFileSync(`./MAL-Sync-Backup/data/anilist/anime/${alAnimeFile}.json`, 'utf8'))
-        const malFileIndex = malAnimeFiles.indexOf(alData.malId ?? -1)
-        let malData: any
-        if (malFileIndex >= 0) malData = JSON.parse(readFileSync(`./MAL-Sync-Backup/data/myanimelist/anime/${malAnimeFiles.splice(malFileIndex, 1)[0]}.json`, 'utf8'))
-        let entry: Entry = {
-            mediaType: MediaType.VIDEO,
-            title: alData.title ?? malData?.title ?? "",
-            alternativeTitles: alData.altTitle.map((title: string) => ({ title } as Entry.AlternativeTitle)),
-            staff: [],
-            covers: [{ image: alData.image, quality: Entry.ImageQuality.UNKNOWN }, ...(typeof malData?.image !== 'undefined' ? [{ image: malData.image, quality: Entry.ImageQuality.UNKNOWN }] : [])],
-            banners: [],
-            contentRating: (alData.hentai ?? malData?.hentai ?? false) ? Entry.ContentRating.NSFW : Entry.ContentRating.SAFE,
-            status: Entry.Status.UNKNOWN,
-            tags: [],
-            links: [{ site: "AniList", url: alData.url }, ...(alData.externalLinks as Entry.Link[] ?? [])],
-            platforms: [{
-                name: "Soshiki",
-                id: "soshiki",
-                sources: []
-            }],
-            trackers: [
-                {
-                    name: "AniList",
-                    id: "anilist",
-                    entryId: `${alData.id}`
-                },
-                ...(
-                    typeof malData?.id !== 'undefined' ? [{
-                        name: "MyAnimeList",
-                        id: "myanimelist",
-                        entryId: `${malData.id}`
-                    }] : []
-                )
-            ]
-        }
-        if (typeof malData?.altTitle !== 'undefined') {
-            entry.alternativeTitles.push(...(malData.altTitle.filter((title: string) => entry.alternativeTitles.findIndex(item => item.title === title) === -1).map((title: string) => ({ title } as Entry.AlternativeTitle))))
-        }
-        if (typeof malData?.url !== 'undefined') {
-            entry.links.push({ site: "MyAnimeList", url: malData.url })
-        }
-        if (typeof malData?.externalLinks !== 'undefined') {
-            entry.links.push(...(malData.externalLinks.filter((title: Entry.Link) => entry.links.findIndex(item => item.site.toLowerCase() === title.site.toLowerCase()) === -1) as Entry.Link[]))
-        }
-        if (typeof malData?.legalLinks !== 'undefined') {
-            entry.links.push(...(malData.legalLinks.filter((title: Entry.Link) => entry.links.findIndex(item => item.site.toLowerCase() === title.site.toLowerCase()) === -1) as Entry.Link[]))
-        }
-        for (const source of Object.entries(alData.Pages ?? {})) {
-            for (const sourceEntry of Object.entries(source[1] as any)) {
-                const mapped = VideoMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
-                if (mapped !== null) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
-            }
-        }
-        for (const source of Object.entries(malData?.Pages ?? {})) {
-            for (const sourceEntry of Object.entries(source[1] as any)) {
-                const mapped = VideoMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
-                if (mapped !== null && entry.platforms.find(platform => platform.id === 'soshiki')!.sources.findIndex(item => item.entryId === mapped.entryId) === -1) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
-            }
-        }
-        videoEntries.push(entry)
-    }
-    for (const malAnimeFile of malAnimeFiles) { // clean up
-        const malData = JSON.parse(readFileSync(`./MAL-Sync-Backup/data/myanimelist/anime/${malAnimeFile}.json`, 'utf8'))
-        let entry: Entry = {
-            mediaType: MediaType.VIDEO,
-            title: malData.title ?? "",
-            alternativeTitles: malData.altTitle.map((title: string) => ({ title } as Entry.AlternativeTitle)),
-            staff: [],
-            covers: [{ image: malData.image, quality: Entry.ImageQuality.UNKNOWN }],
-            banners: [],
-            contentRating: (malData.hentai ?? false) ? Entry.ContentRating.NSFW : Entry.ContentRating.SAFE,
-            status: Entry.Status.UNKNOWN,
-            tags: [],
-            links: [{ site: "MyAnimeList", url: malData.url }, ...(malData.externalLinks as Entry.Link[] ?? []), ...(malData.legalLinks as Entry.Link[] ?? [])],
-            platforms: [{
-                name: "Soshiki",
-                id: "soshiki",
-                sources: []
-            }],
-            trackers: [
-                {
-                    name: "MyAnimeList",
-                    id: "myanimelist",
-                    entryId: `${malData.id}`
-                }
-            ]
-        }
-        for (const source of Object.entries(malData.Pages ?? {})) {
-            for (const sourceEntry of Object.entries(source[1] as any)) {
-                const mapped = VideoMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
-                if (mapped !== null) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
-            }
-        }
-        videoEntries.push(entry)
-    }
-    console.log("Reading manga files...")
-    for (const alMangaFile of alMangaFiles) {
-        const alData = JSON.parse(readFileSync(`./MAL-Sync-Backup/data/anilist/manga/${alMangaFile}.json`, 'utf8'))
-        const malFileIndex = malMangaFiles.indexOf(alData.malId ?? -1)
-        let malData: any
-        if (malFileIndex >= 0) malData = JSON.parse(readFileSync(`./MAL-Sync-Backup/data/myanimelist/manga/${malMangaFiles.splice(malFileIndex, 1)[0]}.json`, 'utf8'))
-        const isNovel = alData.category === 'novel' || malData?.category === 'Light Novel'
-        let entry: Entry = {
-            mediaType: isNovel ? MediaType.TEXT : MediaType.IMAGE,
-            title: alData.title ?? malData?.title ?? "",
-            alternativeTitles: alData.altTitle.map((title: string) => ({ title } as Entry.AlternativeTitle)),
-            staff: alData.authors.map((author: string) => ({ name: author, role: 'author' } as Entry.Staff)),
-            covers: [{ image: alData.image, quality: Entry.ImageQuality.UNKNOWN }, ...(typeof malData?.image !== 'undefined' ? [{ image: malData.image, quality: Entry.ImageQuality.UNKNOWN }] : [])],
-            banners: [],
-            contentRating: (alData.hentai ?? malData?.hentai ?? false) ? Entry.ContentRating.NSFW : Entry.ContentRating.SAFE,
-            status: Entry.Status.UNKNOWN,
-            tags: [],
-            links: [{ site: "AniList", url: alData.url }, ...(alData.externalLinks as Entry.Link[] ?? [])],
-            platforms: [{
-                name: "Soshiki",
-                id: "soshiki",
-                sources: []
-            }],
-            trackers: [
-                {
-                    name: "AniList",
-                    id: "anilist",
-                    entryId: `${alData.id}`
-                },
-                ...(
-                    typeof malData?.id !== 'undefined' ? [{
-                        name: "MyAnimeList",
-                        id: "myanimelist",
-                        entryId: `${malData.id}`
-                    }] : []
-                )
-            ]
-        }
-        if (typeof malData?.altTitle !== 'undefined') {
-            entry.alternativeTitles.push(...(malData.altTitle.filter((title: string) => entry.alternativeTitles.findIndex(item => item.title === title) === -1).map((title: string) => ({ title } as Entry.AlternativeTitle))))
-        }
-        if (typeof malData?.url !== 'undefined') {
-            entry.links.push({ site: "MyAnimeList", url: malData.url })
-        }
-        if (typeof malData?.externalLinks !== 'undefined') {
-            entry.links.push(...(malData.externalLinks.filter((title: Entry.Link) => entry.links.findIndex(item => item.site.toLowerCase() === title.site.toLowerCase()) === -1) as Entry.Link[]))
-        }
-        if (typeof malData?.legalLinks !== 'undefined') {
-            entry.links.push(...(malData.legalLinks.filter((title: Entry.Link) => entry.links.findIndex(item => item.site.toLowerCase() === title.site.toLowerCase()) === -1) as Entry.Link[]))
-        }
-        if (typeof malData?.authors !== 'undefined') {
-            entry.staff.push(...malData.authors.filter((author: string) => entry.staff.findIndex(item => item.name.toLowerCase() === author.toLowerCase()) === -1).map((author: string) => ({ name: author, role: 'author' } as Entry.Staff)))
-        }
-        for (const source of Object.entries(alData.Pages ?? {})) {
-            for (const sourceEntry of Object.entries(source[1] as any)) {
-                const mapped = isNovel ? TextMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null : ImageMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
-                if (mapped !== null) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
-            }
-        }
-        for (const source of Object.entries(malData?.Pages ?? {})) {
-            for (const sourceEntry of Object.entries(source[1] as any)) {
-                const mapped = isNovel ? TextMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null : ImageMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
-                if (mapped !== null && entry.platforms.find(platform => platform.id === 'soshiki')!.sources.findIndex(item => item.entryId === mapped.entryId) === -1) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
-            }
-        }
-        if (isNovel) textEntries.push(entry)
-        else imageEntries.push(entry)
-    }
-    for (const malMangaFile of malMangaFiles) {
-        if (malMangaFile === '_index.json') continue
-        const malData = JSON.parse(readFileSync(`./MAL-Sync-Backup/data/myanimelist/manga/${malMangaFile}.json`, 'utf8'))
-        const isNovel = malData.category === 'Light Novel'
-        let entry: Entry = {
-            mediaType: isNovel ? MediaType.TEXT : MediaType.IMAGE,
-            title: malData.title ??  "",
-            alternativeTitles: malData.altTitle.map((title: string) => ({ title } as Entry.AlternativeTitle)),
-            staff: malData.authors.map((author: string) => ({ name: author, role: 'author' } as Entry.Staff)),
-            covers: [{ image: malData.image, quality: Entry.ImageQuality.UNKNOWN }],
-            banners: [],
-            contentRating: (malData.hentai ?? false) ? Entry.ContentRating.NSFW : Entry.ContentRating.SAFE,
-            status: Entry.Status.UNKNOWN,
-            tags: [],
-            links: [{ site: "MyAnimeList", url: malData.url }, ...(malData.externalLinks as Entry.Link[] ?? []), ...(malData.legalLinks as Entry.Link[] ?? [])],
-            platforms: [{
-                name: "Soshiki",
-                id: "soshiki",
-                sources: []
-            }],
-            trackers: [
-                {
-                    name: "MyAnimeList",
-                    id: "myanimelist",
-                    entryId: `${malData.id}`
-                }
-            ]
-        }
-        for (const source of Object.entries(malData.Pages ?? {})) {
-            for (const sourceEntry of Object.entries(source[1] as any)) {
-                const mapped = isNovel ? TextMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null : ImageMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
-                if (mapped !== null) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
-            }
-        }
-        if (isNovel) textEntries.push(entry)
-        else imageEntries.push(entry)
-    }
-    console.log(`Totals:\n\t${textEntries.length} text entries\n\t${imageEntries.length} image entries\n\t${videoEntries.length} video entries`)
-    console.log("Adding entries to database...")
-    await Promise.all([
-        db.addDatabaseEntries(MediaType.TEXT, textEntries),
-        db.addDatabaseEntries(MediaType.IMAGE, imageEntries),
-        db.addDatabaseEntries(MediaType.VIDEO, videoEntries)
-    ])
-    console.log("Cleaning up...");
-    // rmSync(`./MAL-Sync-Backup`, {recursive: true});
-    console.log("Done cleaning up.");
-    process.exit(0);
-}
 async function update() {
     const db = await Database.connect()
 
-    const REPO_URL = "https://github.com/MALSync/MAL-Sync-Backup.git";
+    const REPO_URL = "https://github.com/MALSync/MAL-Sync-Backup";
 
     console.log("Cloning repo");
     if (!readdirSync("./").includes("MAL-Sync-Backup")) {
@@ -285,61 +49,7 @@ async function update() {
         const malFileIndex = malAnimeFiles.indexOf(alData.malId ?? -1)
         let malData: any
         if (malFileIndex >= 0) malData = JSON.parse(readFileSync(`./MAL-Sync-Backup/data/myanimelist/anime/${malAnimeFiles.splice(malFileIndex, 1)[0]}.json`, 'utf8'))
-        let entry: Entry = {
-            mediaType: MediaType.VIDEO,
-            title: alData.title ?? malData?.title ?? "",
-            alternativeTitles: alData.altTitle.map((title: string) => ({ title } as Entry.AlternativeTitle)),
-            staff: [],
-            covers: [{ image: alData.image, quality: Entry.ImageQuality.UNKNOWN }, ...(typeof malData?.image !== 'undefined' ? [{ image: malData.image, quality: Entry.ImageQuality.UNKNOWN }] : [])],
-            banners: [],
-            contentRating: (alData.hentai ?? malData?.hentai ?? false) ? Entry.ContentRating.NSFW : Entry.ContentRating.SAFE,
-            status: Entry.Status.UNKNOWN,
-            tags: [],
-            links: [{ site: "AniList", url: alData.url }, ...(alData.externalLinks as Entry.Link[] ?? [])],
-            platforms: [{
-                name: "Soshiki",
-                id: "soshiki",
-                sources: []
-            }],
-            trackers: [
-                {
-                    name: "AniList",
-                    id: "anilist",
-                    entryId: `${alData.id}`
-                },
-                ...(
-                    typeof malData?.id !== 'undefined' ? [{
-                        name: "MyAnimeList",
-                        id: "myanimelist",
-                        entryId: `${malData.id}`
-                    }] : []
-                )
-            ]
-        }
-        if (typeof malData?.altTitle !== 'undefined') {
-            entry.alternativeTitles.push(...(malData.altTitle.filter((title: string) => entry.alternativeTitles.findIndex(item => item.title === title) === -1).map((title: string) => ({ title } as Entry.AlternativeTitle))))
-        }
-        if (typeof malData?.url !== 'undefined') {
-            entry.links.push({ site: "MyAnimeList", url: malData.url })
-        }
-        if (typeof malData?.externalLinks !== 'undefined') {
-            entry.links.push(...(malData.externalLinks.filter((title: Entry.Link) => entry.links.findIndex(item => item.site.toLowerCase() === title.site.toLowerCase()) === -1) as Entry.Link[]))
-        }
-        if (typeof malData?.legalLinks !== 'undefined') {
-            entry.links.push(...(malData.legalLinks.filter((title: Entry.Link) => entry.links.findIndex(item => item.site.toLowerCase() === title.site.toLowerCase()) === -1) as Entry.Link[]))
-        }
-        for (const source of Object.entries(alData.Pages ?? {})) {
-            for (const sourceEntry of Object.entries(source[1] as any)) {
-                const mapped = VideoMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
-                if (mapped !== null) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
-            }
-        }
-        for (const source of Object.entries(malData?.Pages ?? {})) {
-            for (const sourceEntry of Object.entries(source[1] as any)) {
-                const mapped = VideoMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
-                if (mapped !== null && entry.platforms.find(platform => platform.id === 'soshiki')!.sources.findIndex(item => item.entryId === mapped.entryId) === -1) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
-            }
-        }
+        const entry = createAnilistAnimeEntry(alData, malData)
         videoEntries.push(entry)
         alAnimeFileCount++
         alAnimeFileProgress.update(alAnimeFileCount)
@@ -354,36 +64,7 @@ async function update() {
     malAnimeFileProgress.start(malAnimeInitialLength, malAnimeFileCount, { type: "MAL Anime" })
     for (const malAnimeFile of malAnimeFiles) {
         const malData = JSON.parse(readFileSync(`./MAL-Sync-Backup/data/myanimelist/anime/${malAnimeFile}.json`, 'utf8'))
-        let entry: Entry = {
-            mediaType: MediaType.VIDEO,
-            title: malData.title ?? "",
-            alternativeTitles: malData.altTitle.map((title: string) => ({ title } as Entry.AlternativeTitle)),
-            staff: [],
-            covers: [{ image: malData.image, quality: Entry.ImageQuality.UNKNOWN }],
-            banners: [],
-            contentRating: (malData.hentai ?? false) ? Entry.ContentRating.NSFW : Entry.ContentRating.SAFE,
-            status: Entry.Status.UNKNOWN,
-            tags: [],
-            links: [{ site: "MyAnimeList", url: malData.url }, ...(malData.externalLinks as Entry.Link[] ?? []), ...(malData.legalLinks as Entry.Link[] ?? [])],
-            platforms: [{
-                name: "Soshiki",
-                id: "soshiki",
-                sources: []
-            }],
-            trackers: [
-                {
-                    name: "MyAnimeList",
-                    id: "myanimelist",
-                    entryId: `${malData.id}`
-                }
-            ]
-        }
-        for (const source of Object.entries(malData.Pages ?? {})) {
-            for (const sourceEntry of Object.entries(source[1] as any)) {
-                const mapped = VideoMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
-                if (mapped !== null) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
-            }
-        }
+        const entry = createMalAnimeEntry(malData)
         videoEntries.push(entry)
         malAnimeFileCount++
         malAnimeFileProgress.update(malAnimeFileCount)
@@ -402,64 +83,7 @@ async function update() {
         let malData: any
         if (malFileIndex >= 0) malData = JSON.parse(readFileSync(`./MAL-Sync-Backup/data/myanimelist/manga/${malMangaFiles.splice(malFileIndex, 1)[0]}.json`, 'utf8'))
         const isNovel = alData.category === 'novel' || malData?.category === 'Light Novel'
-        let entry: Entry = {
-            mediaType: isNovel ? MediaType.TEXT : MediaType.IMAGE,
-            title: alData.title ?? malData?.title ?? "",
-            alternativeTitles: alData.altTitle.map((title: string) => ({ title } as Entry.AlternativeTitle)),
-            staff: alData.authors.map((author: string) => ({ name: author, role: 'author' } as Entry.Staff)),
-            covers: [{ image: alData.image, quality: Entry.ImageQuality.UNKNOWN }, ...(typeof malData?.image !== 'undefined' ? [{ image: malData.image, quality: Entry.ImageQuality.UNKNOWN }] : [])],
-            banners: [],
-            contentRating: (alData.hentai ?? malData?.hentai ?? false) ? Entry.ContentRating.NSFW : Entry.ContentRating.SAFE,
-            status: Entry.Status.UNKNOWN,
-            tags: [],
-            links: [{ site: "AniList", url: alData.url }, ...(alData.externalLinks as Entry.Link[] ?? [])],
-            platforms: [{
-                name: "Soshiki",
-                id: "soshiki",
-                sources: []
-            }],
-            trackers: [
-                {
-                    name: "AniList",
-                    id: "anilist",
-                    entryId: `${alData.id}`
-                },
-                ...(
-                    typeof malData?.id !== 'undefined' ? [{
-                        name: "MyAnimeList",
-                        id: "myanimelist",
-                        entryId: `${malData.id}`
-                    }] : []
-                )
-            ]
-        }
-        if (typeof malData?.altTitle !== 'undefined') {
-            entry.alternativeTitles.push(...(malData.altTitle.filter((title: string) => entry.alternativeTitles.findIndex(item => item.title === title) === -1).map((title: string) => ({ title } as Entry.AlternativeTitle))))
-        }
-        if (typeof malData?.url !== 'undefined') {
-            entry.links.push({ site: "MyAnimeList", url: malData.url })
-        }
-        if (typeof malData?.externalLinks !== 'undefined') {
-            entry.links.push(...(malData.externalLinks.filter((title: Entry.Link) => entry.links.findIndex(item => item.site.toLowerCase() === title.site.toLowerCase()) === -1) as Entry.Link[]))
-        }
-        if (typeof malData?.legalLinks !== 'undefined') {
-            entry.links.push(...(malData.legalLinks.filter((title: Entry.Link) => entry.links.findIndex(item => item.site.toLowerCase() === title.site.toLowerCase()) === -1) as Entry.Link[]))
-        }
-        if (typeof malData?.authors !== 'undefined') {
-            entry.staff.push(...malData.authors.filter((author: string) => entry.staff.findIndex(item => item.name.toLowerCase() === author.toLowerCase()) === -1).map((author: string) => ({ name: author, role: 'author' } as Entry.Staff)))
-        }
-        for (const source of Object.entries(alData.Pages ?? {})) {
-            for (const sourceEntry of Object.entries(source[1] as any)) {
-                const mapped = isNovel ? TextMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null : ImageMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
-                if (mapped !== null) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
-            }
-        }
-        for (const source of Object.entries(malData?.Pages ?? {})) {
-            for (const sourceEntry of Object.entries(source[1] as any)) {
-                const mapped = isNovel ? TextMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null : ImageMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
-                if (mapped !== null && entry.platforms.find(platform => platform.id === 'soshiki')!.sources.findIndex(item => item.entryId === mapped.entryId) === -1) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
-            }
-        }
+        const entry = createAnilistMangaEntry(alData, malData, isNovel)
         if (isNovel) textEntries.push(entry)
         else imageEntries.push(entry)
         alMangaFileCount++
@@ -477,36 +101,7 @@ async function update() {
         if (malMangaFile === '_index.json') return
         const malData = JSON.parse(readFileSync(`./MAL-Sync-Backup/data/myanimelist/manga/${malMangaFile}.json`, 'utf8'))
         const isNovel = malData.category === 'Light Novel'
-        let entry: Entry = {
-            mediaType: isNovel ? MediaType.TEXT : MediaType.IMAGE,
-            title: malData.title ??  "",
-            alternativeTitles: malData.altTitle.map((title: string) => ({ title } as Entry.AlternativeTitle)),
-            staff: malData.authors.map((author: string) => ({ name: author, role: 'author' } as Entry.Staff)),
-            covers: [{ image: malData.image, quality: Entry.ImageQuality.UNKNOWN }],
-            banners: [],
-            contentRating: (malData.hentai ?? false) ? Entry.ContentRating.NSFW : Entry.ContentRating.SAFE,
-            status: Entry.Status.UNKNOWN,
-            tags: [],
-            links: [{ site: "MyAnimeList", url: malData.url }, ...(malData.externalLinks as Entry.Link[] ?? []), ...(malData.legalLinks as Entry.Link[] ?? [])],
-            platforms: [{
-                name: "Soshiki",
-                id: "soshiki",
-                sources: []
-            }],
-            trackers: [
-                {
-                    name: "MyAnimeList",
-                    id: "myanimelist",
-                    entryId: `${malData.id}`
-                }
-            ]
-        }
-        for (const source of Object.entries(malData.Pages ?? {})) {
-            for (const sourceEntry of Object.entries(source[1] as any)) {
-                const mapped = isNovel ? TextMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null : ImageMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
-                if (mapped !== null) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
-            }
-        }
+        const entry = createMalMangaEntry(malData, isNovel)
         if (isNovel) textEntries.push(entry)
         else imageEntries.push(entry)
         malMangaFileCount++
@@ -663,7 +258,6 @@ async function update() {
     console.log("Done cleaning up.");
     process.exit(0);
 }
-update().then(() => {process.exit(0)})
 
 async function getKitsuEntry(id: string): Promise<Entry | null> {
     const data = await fetch(`https://kitsu.io/api/edge/anime/${id}`).then(res => res.json()).catch((e) => {console.error(e); return {}})
@@ -700,4 +294,425 @@ async function getKitsuEntry(id: string): Promise<Entry | null> {
         platforms: [],
         trackers: [{ name: "Kitsu", id: "kitsu", entryId: id }]
     }
+}
+
+function createAnilistAnimeEntry(alData: any, malData: any | undefined): Entry {
+    let entry: Entry = {
+        mediaType: MediaType.VIDEO,
+        title: alData.title ?? malData?.title ?? "",
+        alternativeTitles: alData.altTitle.map((title: string) => ({ title } as Entry.AlternativeTitle)),
+        staff: [],
+        covers: [{ image: alData.image, quality: Entry.ImageQuality.UNKNOWN }, ...(typeof malData?.image !== 'undefined' ? [{ image: malData.image, quality: Entry.ImageQuality.UNKNOWN }] : [])],
+        banners: [],
+        contentRating: (alData.hentai ?? malData?.hentai ?? false) ? Entry.ContentRating.NSFW : Entry.ContentRating.SAFE,
+        status: Entry.Status.UNKNOWN,
+        tags: [],
+        links: [{ site: "AniList", url: alData.url }, ...(alData.externalLinks as Entry.Link[] ?? [])],
+        platforms: [{
+            name: "Soshiki",
+            id: "soshiki",
+            sources: []
+        }],
+        trackers: [
+            {
+                name: "AniList",
+                id: "anilist",
+                entryId: `${alData.id}`
+            },
+            ...(
+                typeof malData?.id !== 'undefined' ? [{
+                    name: "MyAnimeList",
+                    id: "myanimelist",
+                    entryId: `${malData.id}`
+                }] : []
+            )
+        ]
+    }
+    if (typeof malData?.altTitle !== 'undefined') {
+        entry.alternativeTitles.push(...(malData.altTitle.filter((title: string) => entry.alternativeTitles.findIndex(item => item.title === title) === -1).map((title: string) => ({ title } as Entry.AlternativeTitle))))
+    }
+    if (typeof malData?.url !== 'undefined') {
+        entry.links.push({ site: "MyAnimeList", url: malData.url })
+    }
+    if (typeof malData?.externalLinks !== 'undefined') {
+        entry.links.push(...(malData.externalLinks.filter((title: Entry.Link) => entry.links.findIndex(item => item.site.toLowerCase() === title.site.toLowerCase()) === -1) as Entry.Link[]))
+    }
+    if (typeof malData?.legalLinks !== 'undefined') {
+        entry.links.push(...(malData.legalLinks.filter((title: Entry.Link) => entry.links.findIndex(item => item.site.toLowerCase() === title.site.toLowerCase()) === -1) as Entry.Link[]))
+    }
+    for (const source of Object.entries(alData.Pages ?? {})) {
+        for (const sourceEntry of Object.entries(source[1] as any)) {
+            const mapped = VideoMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
+            if (mapped !== null) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
+        }
+    }
+    for (const source of Object.entries(malData?.Pages ?? {})) {
+        for (const sourceEntry of Object.entries(source[1] as any)) {
+            const mapped = VideoMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
+            if (mapped !== null && entry.platforms.find(platform => platform.id === 'soshiki')!.sources.findIndex(item => item.entryId === mapped.entryId) === -1) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
+        }
+    }
+    return entry
+}
+
+function createMalAnimeEntry(malData: any): Entry {
+    let entry: Entry = {
+        mediaType: MediaType.VIDEO,
+        title: malData.title ?? "",
+        alternativeTitles: malData.altTitle.map((title: string) => ({ title } as Entry.AlternativeTitle)),
+        staff: [],
+        covers: [{ image: malData.image, quality: Entry.ImageQuality.UNKNOWN }],
+        banners: [],
+        contentRating: (malData.hentai ?? false) ? Entry.ContentRating.NSFW : Entry.ContentRating.SAFE,
+        status: Entry.Status.UNKNOWN,
+        tags: [],
+        links: [{ site: "MyAnimeList", url: malData.url }, ...(malData.externalLinks as Entry.Link[] ?? []), ...(malData.legalLinks as Entry.Link[] ?? [])],
+        platforms: [{
+            name: "Soshiki",
+            id: "soshiki",
+            sources: []
+        }],
+        trackers: [
+            {
+                name: "MyAnimeList",
+                id: "myanimelist",
+                entryId: `${malData.id}`
+            }
+        ]
+    }
+    for (const source of Object.entries(malData.Pages ?? {})) {
+        for (const sourceEntry of Object.entries(source[1] as any)) {
+            const mapped = VideoMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
+            if (mapped !== null) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
+        }
+    }
+    return entry
+}
+
+function createAnilistMangaEntry(alData: any, malData: any | undefined, isNovel: boolean) {
+    let entry: Entry = {
+        mediaType: isNovel ? MediaType.TEXT : MediaType.IMAGE,
+        title: alData.title ?? malData?.title ?? "",
+        alternativeTitles: alData.altTitle.map((title: string) => ({ title } as Entry.AlternativeTitle)),
+        staff: alData.authors.map((author: string) => ({ name: author, role: 'author' } as Entry.Staff)),
+        covers: [{ image: alData.image, quality: Entry.ImageQuality.UNKNOWN }, ...(typeof malData?.image !== 'undefined' ? [{ image: malData.image, quality: Entry.ImageQuality.UNKNOWN }] : [])],
+        banners: [],
+        contentRating: (alData.hentai ?? malData?.hentai ?? false) ? Entry.ContentRating.NSFW : Entry.ContentRating.SAFE,
+        status: Entry.Status.UNKNOWN,
+        tags: [],
+        links: [{ site: "AniList", url: alData.url }, ...(alData.externalLinks as Entry.Link[] ?? [])],
+        platforms: [{
+            name: "Soshiki",
+            id: "soshiki",
+            sources: []
+        }],
+        trackers: [
+            {
+                name: "AniList",
+                id: "anilist",
+                entryId: `${alData.id}`
+            },
+            ...(
+                typeof malData?.id !== 'undefined' ? [{
+                    name: "MyAnimeList",
+                    id: "myanimelist",
+                    entryId: `${malData.id}`
+                }] : []
+            )
+        ]
+    }
+    if (typeof malData?.altTitle !== 'undefined') {
+        entry.alternativeTitles.push(...(malData.altTitle.filter((title: string) => entry.alternativeTitles.findIndex(item => item.title === title) === -1).map((title: string) => ({ title } as Entry.AlternativeTitle))))
+    }
+    if (typeof malData?.url !== 'undefined') {
+        entry.links.push({ site: "MyAnimeList", url: malData.url })
+    }
+    if (typeof malData?.externalLinks !== 'undefined') {
+        entry.links.push(...(malData.externalLinks.filter((title: Entry.Link) => entry.links.findIndex(item => item.site.toLowerCase() === title.site.toLowerCase()) === -1) as Entry.Link[]))
+    }
+    if (typeof malData?.legalLinks !== 'undefined') {
+        entry.links.push(...(malData.legalLinks.filter((title: Entry.Link) => entry.links.findIndex(item => item.site.toLowerCase() === title.site.toLowerCase()) === -1) as Entry.Link[]))
+    }
+    if (typeof malData?.authors !== 'undefined') {
+        entry.staff.push(...malData.authors.filter((author: string) => entry.staff.findIndex(item => item.name.toLowerCase() === author.toLowerCase()) === -1).map((author: string) => ({ name: author, role: 'author' } as Entry.Staff)))
+    }
+    for (const source of Object.entries(alData.Pages ?? {})) {
+        for (const sourceEntry of Object.entries(source[1] as any)) {
+            const mapped = isNovel ? TextMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null : ImageMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
+            if (mapped !== null) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
+        }
+    }
+    for (const source of Object.entries(malData?.Pages ?? {})) {
+        for (const sourceEntry of Object.entries(source[1] as any)) {
+            const mapped = isNovel ? TextMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null : ImageMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
+            if (mapped !== null && entry.platforms.find(platform => platform.id === 'soshiki')!.sources.findIndex(item => item.entryId === mapped.entryId) === -1) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
+        }
+    }
+    return entry
+}
+
+function createMalMangaEntry(malData: any, isNovel: boolean) {
+    let entry: Entry = {
+        mediaType: isNovel ? MediaType.TEXT : MediaType.IMAGE,
+        title: malData.title ??  "",
+        alternativeTitles: malData.altTitle.map((title: string) => ({ title } as Entry.AlternativeTitle)),
+        staff: malData.authors.map((author: string) => ({ name: author, role: 'author' } as Entry.Staff)),
+        covers: [{ image: malData.image, quality: Entry.ImageQuality.UNKNOWN }],
+        banners: [],
+        contentRating: (malData.hentai ?? false) ? Entry.ContentRating.NSFW : Entry.ContentRating.SAFE,
+        status: Entry.Status.UNKNOWN,
+        tags: [],
+        links: [{ site: "MyAnimeList", url: malData.url }, ...(malData.externalLinks as Entry.Link[] ?? []), ...(malData.legalLinks as Entry.Link[] ?? [])],
+        platforms: [{
+            name: "Soshiki",
+            id: "soshiki",
+            sources: []
+        }],
+        trackers: [
+            {
+                name: "MyAnimeList",
+                id: "myanimelist",
+                entryId: `${malData.id}`
+            }
+        ]
+    }
+    for (const source of Object.entries(malData.Pages ?? {})) {
+        for (const sourceEntry of Object.entries(source[1] as any)) {
+            const mapped = isNovel ? TextMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null : ImageMappers[source[0].toLowerCase()]?.(sourceEntry[1] as MalSyncLink) ?? null
+            if (mapped !== null) entry.platforms.find(platform => platform.id === 'soshiki')?.sources.push(mapped)
+        }
+    }
+    return entry
+}
+
+async function individualUpdate() {
+    const db = await Database.connect()
+
+    const REPO_URL = "https://github.com/MALSync/MAL-Sync-Backup";
+
+    console.log("Cloning repo");
+    if (!readdirSync("./").includes("MAL-Sync-Backup")) {
+        spawnSync("git", ["clone", REPO_URL]);
+        console.log("Cloned repo");
+    } else {
+        console.log("Repo already cloned");
+    }
+    console.log("Reading directories");
+    let malMangaFiles = JSON.parse(readFileSync("./MAL-Sync-Backup/data/myanimelist/manga/_index.json", "utf8"));
+    let malAnimeFiles = JSON.parse(readFileSync("./MAL-Sync-Backup/data/myanimelist/anime/_index.json", "utf8"));
+    let alMangaFiles = JSON.parse(readFileSync("./MAL-Sync-Backup/data/anilist/manga/_index.json", "utf8"));
+    let alAnimeFiles = JSON.parse(readFileSync("./MAL-Sync-Backup/data/anilist/anime/_index.json", "utf8"));
+    console.log("Read directories");
+    console.log("Fetching anime-lists links...")
+    const animeLinks = await fetch('https://raw.githubusercontent.com/Fribb/anime-lists/master/anime-list-full.json').then(res => res.json())
+    console.log("Total MAL manga files: " + malMangaFiles.length);
+    console.log("Total MAL anime files: " + malAnimeFiles.length);
+    console.log("Total AL manga files: " + alMangaFiles.length);
+    console.log("Total AL anime files: " + alAnimeFiles.length);
+    const malAnimeInitialLength = malAnimeFiles.length
+    const malMangaInitialLength = malMangaFiles.length
+    let textEntryCount = 0
+    let imageEntryCount = 0
+    let videoEntryCount = 0
+    let newTextEntryCount = 0
+    let newImageEntryCount = 0
+    let newVideoEntryCount = 0
+    let alAnimeFileCount = 0
+    const alAnimeFileProgress =  new progress.SingleBar({
+        clearOnComplete: false,
+        hideCursor: true,
+        format: "{type} | {bar} | {percentage}% | {value} of {total}"
+    }, progress.Presets.rect)
+    alAnimeFileProgress.start(alAnimeFiles.length, 0, { type: "AL Anime " })
+    await Promise.all(alAnimeFiles.map((alAnimeFile: any) => (async () => {
+        const alData = JSON.parse(readFileSync(`./MAL-Sync-Backup/data/anilist/anime/${alAnimeFile}.json`, 'utf8'))
+        const malFileIndex = malAnimeFiles.indexOf(alData.malId ?? -1)
+        let malData: any
+        if (malFileIndex >= 0) malData = JSON.parse(readFileSync(`./MAL-Sync-Backup/data/myanimelist/anime/${malAnimeFiles.splice(malFileIndex, 1)[0]}.json`, 'utf8'))
+        let entry = createAnilistAnimeEntry(alData, malData)
+        const link = animeLinks.find((link: any) => `${link.anilist_id}` === `${alData.id}` || (malData?.id !== undefined && `${malData?.id}` === `${link.mal_id}`))
+        if (typeof link !== 'undefined') {
+            for (const item of Object.entries(link)) {
+                switch (item[0]) {
+                    case "livechart_id": entry.trackers.push({ name: "LiveChart", id: "livechart", entryId: `${item[1]}` }); break
+                    case "anime-planet_id": entry.trackers.push({ name: "Anime-Planet", id: "anime-planet", entryId: `${item[1]}` }); break
+                    case "anisearch_id": entry.trackers.push({ name: "aniSearch", id: "anisearch", entryId: `${item[1]}` }); break
+                    case "anidb_id": entry.trackers.push({ name: "AniDB", id: "anidb", entryId: `${item[1]}` }); break
+                    case "kitsu_id": entry.trackers.push({ name: "Kitsu", id: "kitsu", entryId: `${item[1]}` }); break
+                    case "notify.moe_id": entry.trackers.push({ name: "Notify.moe", id: "notify.moe", entryId: `${item[1]}` }); break
+                    case "thetvdb_id": entry.trackers.push({ name: "TheTVDB", id: "thetvdb", entryId: `${item[1]}` }); break
+                    case "imdb_id": entry.trackers.push({ name: "IMDb", id: "imdb", entryId: `${item[1]}` }); break
+                    case "themoviedb_id": entry.trackers.push({ name: "TMDB", id: "tmdb", entryId: `${item[1]}` }); break
+                }
+            }
+        }
+        let dbEntry = await db.getDatabaseEntry({
+            $or: entry.trackers.map(tracker => ({ trackers: tracker }))
+        }, MediaType.VIDEO) as Entry & { _id?: MUUID } | null
+        if (dbEntry === null) {
+            await db.addDatabaseEntry(MediaType.VIDEO, entry)
+            newVideoEntryCount++
+        } else {
+            delete dbEntry._id
+            if (!objectEquals(entry, dbEntry, {strict: true})) {
+                await db.setDatabaseEntryByQuery(MediaType.VIDEO, {
+                    $or: entry.trackers.map(tracker => ({ trackers: tracker }))
+                }, entry)
+            }
+        }
+        videoEntryCount++
+        alAnimeFileCount++
+        alAnimeFileProgress.update(alAnimeFileCount)
+    })()))
+    alAnimeFileProgress.stop()
+    let malAnimeFileCount = malAnimeInitialLength - malAnimeFiles.length
+    const malAnimeFileProgress =  new progress.SingleBar({
+        clearOnComplete: false,
+        hideCursor: true,
+        format: "{type} | {bar} | {percentage}% | {value} of {total}"
+    }, progress.Presets.rect)
+    malAnimeFileProgress.start(malAnimeInitialLength, malAnimeFileCount, { type: "MAL Anime" })
+    await Promise.all(malAnimeFiles.map((malAnimeFile: any) => (async () => {
+        const malData = JSON.parse(readFileSync(`./MAL-Sync-Backup/data/myanimelist/anime/${malAnimeFile}.json`, 'utf8'))
+        let entry = createMalAnimeEntry(malData)
+        const link = animeLinks.find((link: any) => `${link.mal_id}` === `${malData.id}`)
+        if (typeof link !== 'undefined') {
+            for (const item of Object.entries(link)) {
+                switch (item[0]) {
+                    case "livechart_id": entry.trackers.push({ name: "LiveChart", id: "livechart", entryId: `${item[1]}` }); break
+                    case "anime-planet_id": entry.trackers.push({ name: "Anime-Planet", id: "anime-planet", entryId: `${item[1]}` }); break
+                    case "anisearch_id": entry.trackers.push({ name: "aniSearch", id: "anisearch", entryId: `${item[1]}` }); break
+                    case "anidb_id": entry.trackers.push({ name: "AniDB", id: "anidb", entryId: `${item[1]}` }); break
+                    case "kitsu_id": entry.trackers.push({ name: "Kitsu", id: "kitsu", entryId: `${item[1]}` }); break
+                    case "notify.moe_id": entry.trackers.push({ name: "Notify.moe", id: "notify.moe", entryId: `${item[1]}` }); break
+                    case "thetvdb_id": entry.trackers.push({ name: "TheTVDB", id: "thetvdb", entryId: `${item[1]}` }); break
+                    case "imdb_id": entry.trackers.push({ name: "IMDb", id: "imdb", entryId: `${item[1]}` }); break
+                    case "themoviedb_id": entry.trackers.push({ name: "TMDB", id: "tmdb", entryId: `${item[1]}` }); break
+                }
+            }
+        }
+        let dbEntry = await db.getDatabaseEntry({
+            $or: entry.trackers.map(tracker => ({ trackers: tracker }))
+        }, MediaType.VIDEO) as Entry & { _id?: MUUID } | null
+        if (dbEntry === null) {
+            await db.addDatabaseEntry(MediaType.VIDEO, entry)
+            newVideoEntryCount++
+        } else {
+            delete dbEntry._id
+            if (!objectEquals(entry, dbEntry, {strict: true})) {
+                await db.setDatabaseEntryByQuery(MediaType.VIDEO, {
+                    $or: entry.trackers.map(tracker => ({ trackers: tracker }))
+                }, entry)
+            }
+        }
+        videoEntryCount++
+        malAnimeFileCount++
+        malAnimeFileProgress.update(malAnimeFileCount)
+    })()))
+    malAnimeFileProgress.stop()
+    let alMangaFileCount = 0
+    const alMangaFileProgress =  new progress.SingleBar({
+        clearOnComplete: false,
+        hideCursor: true,
+        format: "{type} | {bar} | {percentage}% | {value} of {total}"
+    }, progress.Presets.rect)
+    alMangaFileProgress.start(alMangaFiles.length, 0, { type: "AL Manga " })
+    await Promise.all(alMangaFiles.map((alMangaFile: any) => (async () => {
+        const alData = JSON.parse(readFileSync(`./MAL-Sync-Backup/data/anilist/manga/${alMangaFile}.json`, 'utf8'))
+        const malFileIndex = malMangaFiles.indexOf(alData.malId ?? -1)
+        let malData: any
+        if (malFileIndex >= 0) malData = JSON.parse(readFileSync(`./MAL-Sync-Backup/data/myanimelist/manga/${malMangaFiles.splice(malFileIndex, 1)[0]}.json`, 'utf8'))
+        const isNovel = alData.category === 'novel' || malData?.category === 'Light Novel'
+        const entry = createAnilistMangaEntry(alData, malData, isNovel)
+        if (isNovel) {
+            const dbEntry = await db.getDatabaseEntry({
+                $or: entry.trackers.map(tracker => ({ trackers: tracker }))
+            }, MediaType.TEXT) as Entry & { _id?: MUUID } | null
+            if (dbEntry === null) {
+                await db.addDatabaseEntry(MediaType.TEXT, entry)
+                newTextEntryCount++
+            } else {
+                delete dbEntry._id
+                if (!objectEquals(entry, dbEntry, {strict: true})) {
+                    await db.setDatabaseEntryByQuery(MediaType.TEXT, {
+                        $or: entry.trackers.map(tracker => ({ trackers: tracker }))
+                    }, entry)
+                }
+            }
+            textEntryCount++
+        } else {
+            const dbEntry = await db.getDatabaseEntry({
+                $or: entry.trackers.map(tracker => ({ trackers: tracker }))
+            }, MediaType.IMAGE) as Entry & { _id?: MUUID } | null
+            if (dbEntry === null) {
+                await db.addDatabaseEntry(MediaType.IMAGE, entry)
+                newImageEntryCount++
+            } else {
+                delete dbEntry._id
+                if (!objectEquals(entry, dbEntry, {strict: true})) {
+                    await db.setDatabaseEntryByQuery(MediaType.IMAGE, {
+                        $or: entry.trackers.map(tracker => ({ trackers: tracker }))
+                    }, entry)
+                }
+            }
+            imageEntryCount++
+        }
+        alMangaFileCount++
+        alMangaFileProgress.update(alMangaFileCount)
+    })()))
+    alMangaFileProgress.stop()
+    let malMangaFileCount = malMangaInitialLength - malMangaFiles.length
+    const malMangaFileProgress =  new progress.SingleBar({
+        clearOnComplete: false,
+        hideCursor: true,
+        format: "{type} | {bar} | {percentage}% | {value} of {total}"
+    }, progress.Presets.rect)
+    malMangaFileProgress.start(malMangaInitialLength, malMangaFileCount, { type: "MAL Manga" })
+    await Promise.all(malMangaFiles.map((malMangaFile: any) => (async () => {
+        if (malMangaFile === '_index.json') return
+        const malData = JSON.parse(readFileSync(`./MAL-Sync-Backup/data/myanimelist/manga/${malMangaFile}.json`, 'utf8'))
+        const isNovel = malData.category === 'Light Novel'
+        const entry = createMalMangaEntry(malData, isNovel)
+        if (isNovel) {
+            const dbEntry = await db.getDatabaseEntry({
+                $or: entry.trackers.map(tracker => ({ trackers: tracker }))
+            }, MediaType.TEXT) as Entry & { _id?: MUUID } | null
+            if (dbEntry === null) {
+                await db.addDatabaseEntry(MediaType.TEXT, entry)
+                newTextEntryCount++
+            } else {
+                delete dbEntry._id
+                if (!objectEquals(entry, dbEntry, {strict: true})) {
+                    await db.setDatabaseEntryByQuery(MediaType.TEXT, {
+                        $or: entry.trackers.map(tracker => ({ trackers: tracker }))
+                    }, entry)
+                }
+            }
+            textEntryCount++
+        } else {
+            const dbEntry = await db.getDatabaseEntry({
+                $or: entry.trackers.map(tracker => ({ trackers: tracker }))
+            }, MediaType.IMAGE) as Entry & { _id?: MUUID } | null
+            if (dbEntry === null) {
+                await db.addDatabaseEntry(MediaType.IMAGE, entry)
+                newImageEntryCount++
+            } else {
+                delete dbEntry._id
+                if (!objectEquals(entry, dbEntry, {strict: true})) {
+                    await db.setDatabaseEntryByQuery(MediaType.IMAGE, {
+                        $or: entry.trackers.map(tracker => ({ trackers: tracker }))
+                    }, entry)
+                }
+            }
+            imageEntryCount++
+        }
+        malMangaFileCount++
+        malMangaFileProgress.update(malMangaFileCount)
+    })()))
+    malMangaFileProgress.stop()
+    console.log(`Totals:\n\t${textEntryCount} text entries (${newTextEntryCount} new)\n\t${imageEntryCount} image entries (${newImageEntryCount} new)\n\t${videoEntryCount} video entries (${newVideoEntryCount} new)`)
+    console.log("Cleaning up...");
+    // rmSync(`./MAL-Sync-Backup`, {recursive: true});
+    console.log("Done cleaning up.");
+    process.exit(0);
 }
