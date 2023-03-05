@@ -1,4 +1,4 @@
-import { readFileSync, rmSync, readdirSync } from "fs"
+import { readFileSync, rmSync, readdirSync, writeFileSync } from "fs"
 import { spawnSync } from "child_process"
 import { Database } from "."
 import { Entry, MediaType } from "soshiki-types"
@@ -8,8 +8,8 @@ import { MUUID } from "uuid-mongodb"
 import progress from "cli-progress"
 import fetch from "node-fetch"
 
-// update().then(() => {process.exit(0)})
-individualUpdate().then(() => {process.exit(0)})
+update().then(() => {process.exit(0)})
+// individualUpdate().then(() => {process.exit(0)})
 
 async function update() {
     const db = await Database.connect()
@@ -187,77 +187,195 @@ async function update() {
     // }
     // unfoundLinksProgress.stop()
     console.log(`Totals:\n\t${textEntries.length} text entries\n\t${imageEntries.length} image entries\n\t${videoEntries.length} video entries`)
-    console.log("Updating entries in database...")
-    let newTextEntryCount = 0
-    let newImageEntryCount = 0
-    let newVideoEntryCount = 0
-    const dbProgress = new progress.MultiBar({
+    console.log(`Fetching anime-skip data...`)
+    const animeSkipProgress =  new progress.SingleBar({
+        clearOnComplete: false,
+        hideCursor: true,
+        format: "{type} | {bar} | {percentage}% | {value} of {total}"
+    }, progress.Presets.rect)
+    animeSkipProgress.start(animeLinks.length, 0, { type: "anime-skip Entries" })
+    let animeSkipCount = 0
+    for (let index = 0; index < 1000; index += 100) {
+        const skipData = await fetch("https://api.anime-skip.com/graphql", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Client-Id": process.env.ANIME_SKIP_CLIENT_ID!
+            },
+            body: JSON.stringify({ query: `
+    query {
+        searchShows(limit: 100, offset: ${index}) {
+            episodes {
+                timestamps {
+                    typeId,
+                    at
+                },
+                number
+            },
+            externalLinks {
+                service,
+                serviceId
+            }
+        }
+    }
+            ` })
+        }).then(res => res.json())
+        if ("error" in skipData) console.log(`Errored at offset ${index}`)
+        if ("data" in skipData && "searchShows" in skipData.data) {
+            for (const item of skipData.data.searchShows) {
+                animeSkipCount++
+                animeSkipProgress.update(animeSkipCount)
+                const link = item.externalLinks.find((link: any) => link.service === "anilist.co")
+                if (typeof link !== "object") continue
+                const entryIndex = videoEntries.findIndex(entry => entry.trackers.find(tracker => tracker.id === "anilist")?.entryId === link.serviceId)
+                if (entryIndex === -1) continue
+                const entry = videoEntries[entryIndex]
+                entry.skipTimes = item.episodes.map((episode: any) => ({
+                    episode: parseFloat(episode.number),
+                    times: episode.timestamps.map((timestamp: any, index: number) => ({
+                        type: parseAnimeSkipType(timestamp.typeId),
+                        start: Math.max(timestamp.at, 0),
+                        end: index >= episode.timestamps.length - 1 ? undefined : Math.max(episode.timestamps[index + 1].at, 0)
+                    } as Entry.SkipTimeItem))
+                } as Entry.SkipTime))
+            }
+        }
+    }
+    animeSkipProgress.stop()
+    console.log(`Fetching Anilist data and updating entries in database...`)
+    const anilistProgress = new progress.MultiBar({
         clearOnComplete: false,
         hideCursor: true, 
         format: "{type} | {bar} | {percentage}% | {value} of {total}"
     }, progress.Presets.rect)
-    const textDbProgress = dbProgress.create(textEntries.length, 0, { type: "Text " })
-    const imageDbProgress = dbProgress.create(imageEntries.length, 0, { type: "Image" })
-    const videoDbProgress = dbProgress.create(videoEntries.length, 0, { type: "Video" })
-    await Promise.all([
-        ...textEntries.map(entry => (async () => {
-            const dbEntry = await db.getDatabaseEntry({
-                $or: entry.trackers.map(tracker => ({ trackers: tracker }))
-            }, MediaType.TEXT) as Entry & { _id?: MUUID } | null
-            if (dbEntry === null) {
-                await db.addDatabaseEntry(MediaType.TEXT, entry)
-                newTextEntryCount++
-            } else {
-                delete dbEntry._id
-                if (!objectEquals(entry, dbEntry, {strict: true})) {
-                    await db.setDatabaseEntryByQuery(MediaType.TEXT, {
+    const textAnilistProgress = anilistProgress.create(textEntries.length, 0, { type: "Text      " })
+    const textDbProgress = anilistProgress.create(textEntries.length, 0, { type: "Text (DB) " })
+    const imageAnilistProgress = anilistProgress.create(imageEntries.length, 0, { type: "Image     " })
+    const imageDbProgress = anilistProgress.create(imageEntries.length, 0, { type: "Image (DB)" })
+    const videoAnilistProgress = anilistProgress.create(videoEntries.length, 0, { type: "Video     " })
+    const videoDbProgress = anilistProgress.create(videoEntries.length, 0, { type: "Video (DB)" })
+    let newTextEntryCount = 0
+    let newImageEntryCount = 0
+    let newVideoEntryCount = 0
+    let newEntries: { text: string[], image: string[], video: string[] } = { text: [], image: [], video: [] }
+    await new Promise<void>(async (res) => {
+        for (let index = 0; index < textEntries.length; index += 50) {
+            const time = Date.now()
+            const chunk = await updateAnilistInfoBatch(textEntries.slice(index, Math.min(index + 50, textEntries.length)), MediaType.TEXT)
+            textAnilistProgress.increment(chunk.length)
+            await Promise.all(
+                chunk.map(entry => new Promise<void>(async (res) => {
+                    const dbEntry = await db.getDatabaseEntry({
                         $or: entry.trackers.map(tracker => ({ trackers: tracker }))
-                    }, entry)
-                }
-            }
-            textDbProgress.increment()
-        })()),
-        ...imageEntries.map(entry => (async () => {
-            const dbEntry = await db.getDatabaseEntry({
-                $or: entry.trackers.map(tracker => ({ trackers: tracker }))
-            }, MediaType.IMAGE) as Entry & { _id?: MUUID } | null
-            if (dbEntry === null) {
-                await db.addDatabaseEntry(MediaType.IMAGE, entry)
-                newImageEntryCount++
-            } else {
-                delete dbEntry._id
-                if (!objectEquals(entry, dbEntry, {strict: true})) {
-                    await db.setDatabaseEntryByQuery(MediaType.IMAGE, {
+                    }, MediaType.TEXT) as Entry & { _id?: MUUID } | null
+                    if (dbEntry === null) {
+                        await db.addDatabaseEntry(MediaType.TEXT, entry)
+                        newTextEntryCount++
+                        newEntries.text.push(entry.title)
+                    } else {
+                        delete dbEntry._id
+                        if (!objectEquals(entry, dbEntry, {strict: true})) {
+                            const updatedEntry = updateLatestEntries(dbEntry, entry)
+                            await db.setDatabaseEntryByQuery(MediaType.TEXT, {
+                                $or: updatedEntry.trackers.map(tracker => ({ trackers: tracker }))
+                            }, updatedEntry)
+                        }
+                    }
+                    textDbProgress.increment()
+                    res()
+                }))
+            )
+            await new Promise(res => setTimeout(res, Math.max(700 - Date.now() + time, 0)))
+        }
+        res()
+    })
+    await new Promise<void>(async (res) => {
+        for (let index = 0; index < imageEntries.length; index += 50) {
+            const time = Date.now()
+            const chunk = await updateAnilistInfoBatch(imageEntries.slice(index, Math.min(index + 50, imageEntries.length)), MediaType.IMAGE)
+            imageAnilistProgress.increment(chunk.length)
+            await Promise.all(
+                chunk.map(entry => new Promise<void>(async (res) => {
+                    const dbEntry = await db.getDatabaseEntry({
                         $or: entry.trackers.map(tracker => ({ trackers: tracker }))
-                    }, entry)
-                }
-            }
-            imageDbProgress.increment()
-        })()),
-        ...videoEntries.map(entry => (async () => {
-            let dbEntry = await db.getDatabaseEntry({
-                $or: entry.trackers.map(tracker => ({ trackers: tracker }))
-            }, MediaType.VIDEO) as Entry & { _id?: MUUID } | null
-            if (dbEntry === null) {
-                await db.addDatabaseEntry(MediaType.VIDEO, entry)
-                newVideoEntryCount++
-            } else {
-                delete dbEntry._id
-                if (!objectEquals(entry, dbEntry, {strict: true})) {
-                    await db.setDatabaseEntryByQuery(MediaType.VIDEO, {
+                    }, MediaType.IMAGE) as Entry & { _id?: MUUID } | null
+                    if (dbEntry === null) {
+                        await db.addDatabaseEntry(MediaType.IMAGE, entry)
+                        newImageEntryCount++
+                        newEntries.image.push(entry.title)
+                    } else {
+                        delete dbEntry._id
+                        if (!objectEquals(entry, dbEntry, {strict: true})) {
+                            const updatedEntry = updateLatestEntries(dbEntry, entry)
+                            await db.setDatabaseEntryByQuery(MediaType.IMAGE, {
+                                $or: updatedEntry.trackers.map(tracker => ({ trackers: tracker }))
+                            }, updatedEntry)
+                        }
+                    }
+                    imageDbProgress.increment()
+                    res()
+                }))
+            )
+            await new Promise(res => setTimeout(res, Math.max(700 - Date.now() + time, 0)))
+        }
+        res()
+    })
+    await new Promise<void>(async (res) => {
+        for (let index = 0; index < videoEntries.length; index += 50) {
+            const time = Date.now()
+            const chunk = await updateAnilistInfoBatch(videoEntries.slice(index, Math.min(index + 50, videoEntries.length)), MediaType.VIDEO)
+            videoAnilistProgress.increment(chunk.length)
+            await Promise.all(
+                chunk.map(entry => new Promise<void>(async (res) => {
+                    let dbEntry = await db.getDatabaseEntry({
                         $or: entry.trackers.map(tracker => ({ trackers: tracker }))
-                    }, entry)
-                }
-            }
-            videoDbProgress.increment()
-        })())
-    ])
-    dbProgress.stop()
+                    }, MediaType.VIDEO) as Entry & { _id?: MUUID } | null
+                    if (dbEntry === null) {
+                        await db.addDatabaseEntry(MediaType.VIDEO, entry)
+                        newVideoEntryCount++
+                        newEntries.video.push(entry.title)
+                    } else {
+                        delete dbEntry._id
+                        if (!objectEquals(entry, dbEntry, {strict: true})) {
+                            const updatedEntry = updateLatestEntries(dbEntry, entry)
+                            await db.setDatabaseEntryByQuery(MediaType.VIDEO, {
+                                $or: updatedEntry.trackers.map(tracker => ({ trackers: tracker }))
+                            }, updatedEntry)
+                        }
+                    }
+                    videoDbProgress.increment()
+                    res()
+                }))
+            )
+            await new Promise(res => setTimeout(res, Math.max(700 - Date.now() + time, 0)))
+        }
+        res()
+    })
+    anilistProgress.stop()
     console.log(`Totals:\n\tNew text entries: ${newTextEntryCount}\n\tNew image entries: ${newImageEntryCount}\n\tNew video entries: ${newVideoEntryCount}`)
+    writeFileSync("new.json", JSON.stringify(newEntries, null, 2))
     console.log("Cleaning up...");
     // rmSync(`./MAL-Sync-Backup`, {recursive: true});
     console.log("Done cleaning up.");
     process.exit(0);
+}
+
+function updateLatestEntries(dbEntry: Entry, entry: Entry): Entry {
+    for (const platform of dbEntry.platforms) {
+        for (const source of platform.sources) {
+            if (typeof source.latestId === 'string' || typeof source.user === 'string') {
+                const platformIndex = entry.platforms.findIndex(p => p.id === platform.id)
+                if (platformIndex !== -1) {
+                    const sourceIndex = entry.platforms[platformIndex].sources.findIndex(s => s.id === source.id && s.entryId === source.entryId)
+                    if (sourceIndex !== -1) {
+                        entry.platforms[platformIndex].sources[sourceIndex].latestId = source.latestId
+                        entry.platforms[platformIndex].sources[sourceIndex].user = source.user
+                    }
+                }
+            }
+        }
+    }
+    return entry
 }
 
 async function getKitsuEntry(id: string): Promise<Entry | null> {
@@ -716,4 +834,94 @@ async function individualUpdate() {
     // rmSync(`./MAL-Sync-Backup`, {recursive: true});
     console.log("Done cleaning up.");
     process.exit(0);
+}
+
+async function updateAnilistInfoBatch(entries: Entry[], mediaType: MediaType): Promise<Entry[]> {
+    const alIds = entries.map(entry => entry.trackers.find(tracker => tracker.id === 'anilist')?.entryId).filter(id => typeof id === 'string').map((id: string) => parseInt(id))
+    const alData = await fetch(`https://graphql.anilist.co`, {
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            query: `
+query {
+    Page(page: 1, perPage: ${alIds.length}) {
+        media(id_in: ${JSON.stringify(alIds)}, type: ${mediaType === MediaType.VIDEO ? "ANIME" : "MANGA"}) {
+            id,
+            title {
+                english,
+                romaji
+            },
+            status(version: 2),
+            description,
+            coverImage {
+                large,
+                medium,
+                color
+            },
+            bannerImage,
+            genres,
+            synonyms,
+            meanScore,
+            staff {
+                edges {
+                    node {
+                        name {
+                            full
+                        },
+                        image {
+                            large
+                        }
+                    },
+                    role
+                }
+            },
+            isAdult
+        }
+    }
+}
+            `
+        }),
+        method: "POST"
+    }).then(res => res.json()).then(json => json.data?.Page?.media ?? null)
+    if (alData === null) return entries
+    for (const item of alData) {
+        const entryIndex = entries.findIndex(entry => entry.trackers.some(tracker => tracker.id === "anilist" && tracker.entryId === `${item.id}`))
+        if (entryIndex === -1) continue
+        let entry = entries[entryIndex]
+        entry.title = item.title?.english ?? item.title?.romaji ?? entry.title
+        entry.alternativeTitles = [...(typeof item.title?.english === 'string' && typeof item.title?.romaji === 'string' ? [item.title.romaji] : []), ...(item.synonyms ?? [])].map((title: string) => ({ title }))
+        entry.covers = [...(typeof item.coverImage?.large === 'string' ? [{ image: item.coverImage.large, quality: Entry.ImageQuality.HIGH }] : []), ...(typeof item.coverImage?.medium === 'string' ? [{ image: item.coverImage.large, quality: Entry.ImageQuality.MEDIUM }] : [])]
+        entry.banners = (typeof item.bannerImage === 'string' ? [{ image: item.bannerImage, quality: Entry.ImageQuality.UNKNOWN }] : [])
+        entry.color = item.coverImage?.color
+        entry.description = item.description
+        entry.contentRating = item.isAdult === true ? Entry.ContentRating.NSFW : item.isAdult === false ? Entry.ContentRating.SAFE : Entry.ContentRating.UNKNOWN
+        entry.score = typeof item.meanScore === 'number' ? item.meanScore / 10 : undefined
+        entry.status = item.status === "FINISHED" ? Entry.Status.COMPLETED : item.status === "RELEASING" ? Entry.Status.RELEASING : item.status === "NOT_YET_RELEASED" ? Entry.Status.UNRELEASED : item.status === "CANCELLED" ? Entry.Status.CANCELLED : item.status === "HIATUS" ? Entry.Status.HIATUS : Entry.Status.UNKNOWN
+        entry.tags = item.genres?.map((name: string) => ({ name })) ?? []
+        entry.staff = item.staff?.edges?.map((edge: any) => ({ name: edge.node?.name?.full, role: edge.role, image: edge.node?.image?.large })).filter((staff: Partial<Entry.Staff>) => typeof staff.name === 'string') ?? []
+        entries[entryIndex] = entry
+    }
+    return entries
+}
+
+function parseAnimeSkipType(id: string): Entry.SkipTimeItemType {
+    switch (id) {
+        case "9edc0037-fa4e-47a7-a29a-d9c43368daa8": return Entry.SkipTimeItemType.CANON
+        case "e384759b-3cd2-4824-9569-128363b4452b": return Entry.SkipTimeItemType.MUST_WATCH
+        case "97e3629a-95e5-4b1a-9411-73a47c0d0e25": return Entry.SkipTimeItemType.BRANDING
+        case "14550023-2589-46f0-bfb4-152976506b4c": return Entry.SkipTimeItemType.INTRO
+        case "cbb42238-d285-4c88-9e91-feab4bb8ae0a": return Entry.SkipTimeItemType.MIXED_INTRO
+        case "679fb610-ff3c-4cf4-83c0-75bcc7fe8778": return Entry.SkipTimeItemType.NEW_INTRO
+        case "f38ac196-0d49-40a9-8fcf-f3ef2f40f127": return Entry.SkipTimeItemType.RECAP
+        case "c48f1dce-1890-4394-8ce6-c3f5b2f95e5e": return Entry.SkipTimeItemType.FILLER
+        case "9f0c6532-ccae-4238-83ec-a2804fe5f7b0": return Entry.SkipTimeItemType.TRANSITION
+        case "2a730a51-a601-439b-bc1f-7b94a640ffb9": return Entry.SkipTimeItemType.CREDITS
+        case "6c4ade53-4fee-447f-89e4-3bb29184e87a": return Entry.SkipTimeItemType.MIXED_CREDITS
+        case "d839cdb1-21b3-455d-9c21-7ffeb37adbec": return Entry.SkipTimeItemType.NEW_CREDITS
+        case "c7b1eddb-defa-4bc6-a598-f143081cfe4b": return Entry.SkipTimeItemType.PREVIEW
+        case "67321535-a4ea-4f21-8bed-fb3c8286b510": return Entry.SkipTimeItemType.TITLE_CARD
+        case "ae57fcf9-27b0-49a7-9a99-a91aa7518a29": return Entry.SkipTimeItemType.UNKNOWN
+        default: return Entry.SkipTimeItemType.UNKNOWN
+    }
 }

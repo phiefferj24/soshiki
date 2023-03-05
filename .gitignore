@@ -11,3 +11,4 @@ node_modules/
 **/*.p8
 **/*.token
 database-new/MAL-Sync-Backup
+database-new/new.json

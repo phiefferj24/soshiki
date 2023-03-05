@@ -180,6 +180,8 @@ export type Entry = {
     platforms: Entry.Platform[]
     /** A list of trackers which the user can sync their history data with. These also provide entry data. */
     trackers: Entry.Tracker[]
+    /** An array of available skip times (only for video) */
+    skipTimes?: Entry.SkipTime[]
 }
 
 export namespace Entry {
@@ -271,6 +273,35 @@ export namespace Entry {
         HIATUS = "HIATUS",
         CANCELLED = "CANCELLED",
         UNKNOWN = "UNKNOWN"
+    }
+
+    export type SkipTime = {
+        episode: number,
+        times: SkipTimeItem[]
+    }
+
+    export type SkipTimeItem = {
+        type: SkipTimeItemType,
+        start: number,
+        end?: number
+    }
+
+    export enum SkipTimeItemType {
+        INTRO = "Intro",
+        MIXED_INTRO = "Mixed Intro",
+        NEW_INTRO = "New Intro",
+        CANON = "Canon",
+        MUST_WATCH = "Must Watch",
+        BRANDING = "Branding",
+        RECAP = "Recap",
+        FILLER = "Filler",
+        TRANSITION = "Transition",
+        CREDITS = "Credits",
+        MIXED_CREDITS = "Mixed Credits",
+        NEW_CREDITS = "New Credits",
+        PREVIEW = "Preview",
+        TITLE_CARD = "Title Card",
+        UNKNOWN = "Unknown"
     }
 }
 

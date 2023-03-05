@@ -452,7 +452,8 @@ async function listen(mediaType: MediaType, source: string): Promise<void> {
                                 sourceId: itemId,
                                 id: item.entry._id.toString(),
                                 mediaType: mediaType,
-                                count: userDevice.badge,
+                                badge: userDevice.badge,
+                                count: newItemCount,
                                 title: dbSource.name,
                                 subtitle: `${newItemCount} new ${mediaType === MediaType.VIDEO ? "episode" : "chapter"}${newItemCount > 1 ? "s" : ""}`,
                                 body: `${item.entry.title} on ${dbSource.name} has ${newItemCount} new ${mediaType === MediaType.VIDEO ? "episode" : "chapter"}${newItemCount > 1 ? "s" : ""}.` 
@@ -506,6 +507,7 @@ type PostNotificationOptions = {
     sourceId: string,
     id: string,
     mediaType: string,
+    badge: number,
     count: number,
     title: string, 
     subtitle?: string, 
@@ -520,13 +522,14 @@ async function postNotification(options: PostNotificationOptions) {
                 subtitle: options.subtitle,
                 body: options.body
             },
-            badge: options.count,
+            badge: options.badge,
         },
         platform: 'soshiki',
         source: options.source,
         sourceId: options.sourceId,
         id: options.id,
-        mediaType: options.mediaType
+        mediaType: options.mediaType,
+        count: options.count
     }))
     const req = notificationClient.request({
         [http2.constants.HTTP2_HEADER_PATH]: `/3/device/${options.device}`,

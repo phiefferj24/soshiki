@@ -9,5 +9,12 @@ export const VideoMappers: {[key: string]: Mapper} = {
             entryId: match
         }
         return null
+    },
+    "marin": (malSyncLink: MalSyncLink) => {
+        return {
+            id: "en_marin",
+            name: "Marin",
+            entryId: malSyncLink.identifier
+        }
     }
 }
