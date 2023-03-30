@@ -1,6 +1,6 @@
 import { readFileSync, rmSync, readdirSync, writeFileSync } from "fs"
 import { spawnSync } from "child_process"
-import { Database } from "."
+import { Database, DatabaseEntry } from "."
 import { Entry, MediaType } from "soshiki-types"
 import { ImageMappers, MalSyncLink, VideoMappers, TextMappers } from "./maps"
 import objectEquals from "deep-equal"
@@ -188,14 +188,22 @@ async function update() {
     // unfoundLinksProgress.stop()
     console.log(`Totals:\n\t${textEntries.length} text entries\n\t${imageEntries.length} image entries\n\t${videoEntries.length} video entries`)
     console.log(`Fetching anime-skip data...`)
+    const animeSkipTotal = await fetch("https://api.anime-skip.com/graphql", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-Client-Id": process.env.ANIME_SKIP_CLIENT_ID!
+        },
+        body: JSON.stringify({ query: `query { counts { shows } }`})
+    }).then(res => res.json()).then(json => json.data.counts.shows)
     const animeSkipProgress =  new progress.SingleBar({
         clearOnComplete: false,
         hideCursor: true,
         format: "{type} | {bar} | {percentage}% | {value} of {total}"
     }, progress.Presets.rect)
-    animeSkipProgress.start(animeLinks.length, 0, { type: "anime-skip Entries" })
+    //animeSkipProgress.start(animeSkipTotal, 0, { type: "anime-skip Entries" })
     let animeSkipCount = 0
-    for (let index = 0; index < 1000; index += 100) {
+    for (let index = 0; index < animeSkipTotal; index += 100) {
         const skipData = await fetch("https://api.anime-skip.com/graphql", {
             method: "POST",
             headers: {
@@ -220,28 +228,44 @@ async function update() {
     }
             ` })
         }).then(res => res.json())
-        if ("error" in skipData) console.log(`Errored at offset ${index}`)
+        if ("error" in skipData) {
+            console.log(`Errored at offset ${index}`)
+            process.exit(1)
+        }
         if ("data" in skipData && "searchShows" in skipData.data) {
             for (const item of skipData.data.searchShows) {
-                animeSkipCount++
-                animeSkipProgress.update(animeSkipCount)
                 const link = item.externalLinks.find((link: any) => link.service === "anilist.co")
                 if (typeof link !== "object") continue
                 const entryIndex = videoEntries.findIndex(entry => entry.trackers.find(tracker => tracker.id === "anilist")?.entryId === link.serviceId)
                 if (entryIndex === -1) continue
                 const entry = videoEntries[entryIndex]
-                entry.skipTimes = item.episodes.map((episode: any) => ({
-                    episode: parseFloat(episode.number),
-                    times: episode.timestamps.map((timestamp: any, index: number) => ({
-                        type: parseAnimeSkipType(timestamp.typeId),
-                        start: Math.max(timestamp.at, 0),
-                        end: index >= episode.timestamps.length - 1 ? undefined : Math.max(episode.timestamps[index + 1].at, 0)
-                    } as Entry.SkipTimeItem))
-                } as Entry.SkipTime))
+                if (typeof entry.skipTimes === "undefined" || entry.skipTimes === null) {
+                    entry.skipTimes = (item.episodes.map((episode: any) => ({
+                        episode: parseFloat(episode.number),
+                        times: episode.timestamps.map((timestamp: any, index: number) => ({
+                            type: parseAnimeSkipType(timestamp.typeId),
+                            start: Math.max(timestamp.at, 0),
+                            end: index >= episode.timestamps.length - 1 ? undefined : Math.max(episode.timestamps[index + 1].at, 0)
+                        } as Entry.SkipTimeItem))
+                    } as Entry.SkipTime)) as Entry.SkipTime[]).filter(time => time.episode !== null && !isNaN(time.episode))
+                } else {
+                    entry.skipTimes.push(...(item.episodes.map((episode: any) => ({
+                        episode: parseFloat(episode.number),
+                        times: episode.timestamps.map((timestamp: any, index: number) => ({
+                            type: parseAnimeSkipType(timestamp.typeId),
+                            start: Math.max(timestamp.at, 0),
+                            end: index >= episode.timestamps.length - 1 ? undefined : Math.max(episode.timestamps[index + 1].at, 0)
+                        } as Entry.SkipTimeItem))
+                    } as Entry.SkipTime)) as Entry.SkipTime[]).filter(time => time.episode !== null && !isNaN(time.episode)))
+                }
+                console.log(`Pushed ${(item.episodes as any[]).reduce((p, c) => p + c.timestamps.length, 0)} timestamps for ${item.episodes.length} episodes to ${entry.title}`)
+                videoEntries[entryIndex] = entry
+                animeSkipCount++
+                //animeSkipProgress.update(animeSkipCount)
             }
         }
     }
-    animeSkipProgress.stop()
+    //animeSkipProgress.stop()
     console.log(`Fetching Anilist data and updating entries in database...`)
     const anilistProgress = new progress.MultiBar({
         clearOnComplete: false,
@@ -258,6 +282,7 @@ async function update() {
     let newImageEntryCount = 0
     let newVideoEntryCount = 0
     let newEntries: { text: string[], image: string[], video: string[] } = { text: [], image: [], video: [] }
+    /*
     await new Promise<void>(async (res) => {
         for (let index = 0; index < textEntries.length; index += 50) {
             const time = Date.now()
@@ -266,20 +291,19 @@ async function update() {
             await Promise.all(
                 chunk.map(entry => new Promise<void>(async (res) => {
                     const dbEntry = await db.getDatabaseEntry({
-                        $or: entry.trackers.map(tracker => ({ trackers: tracker }))
+                        $or: entry.trackers.filter(tracker => tracker.id === "myanimelist" || tracker.id === "anilist").map(tracker => ({ trackers: tracker }))
                     }, MediaType.TEXT) as Entry & { _id?: MUUID } | null
                     if (dbEntry === null) {
                         await db.addDatabaseEntry(MediaType.TEXT, entry)
                         newTextEntryCount++
                         newEntries.text.push(entry.title)
                     } else {
+                        const id = dbEntry._id!
                         delete dbEntry._id
-                        if (!objectEquals(entry, dbEntry, {strict: true})) {
-                            const updatedEntry = updateLatestEntries(dbEntry, entry)
-                            await db.setDatabaseEntryByQuery(MediaType.TEXT, {
-                                $or: updatedEntry.trackers.map(tracker => ({ trackers: tracker }))
-                            }, updatedEntry)
-                        }
+                        // if (!objectEquals(entry, dbEntry, {strict: true})) {
+                        const updatedEntry = updateLatestEntries(dbEntry, entry)
+                        await db.setDatabaseEntry(MediaType.TEXT, { ...updatedEntry, _id: id })
+                        // }
                     }
                     textDbProgress.increment()
                     res()
@@ -297,20 +321,19 @@ async function update() {
             await Promise.all(
                 chunk.map(entry => new Promise<void>(async (res) => {
                     const dbEntry = await db.getDatabaseEntry({
-                        $or: entry.trackers.map(tracker => ({ trackers: tracker }))
+                        $or: entry.trackers.filter(tracker => tracker.id === "myanimelist" || tracker.id === "anilist").map(tracker => ({ trackers: tracker }))
                     }, MediaType.IMAGE) as Entry & { _id?: MUUID } | null
                     if (dbEntry === null) {
                         await db.addDatabaseEntry(MediaType.IMAGE, entry)
                         newImageEntryCount++
                         newEntries.image.push(entry.title)
                     } else {
+                        const id = dbEntry._id!
                         delete dbEntry._id
-                        if (!objectEquals(entry, dbEntry, {strict: true})) {
-                            const updatedEntry = updateLatestEntries(dbEntry, entry)
-                            await db.setDatabaseEntryByQuery(MediaType.IMAGE, {
-                                $or: updatedEntry.trackers.map(tracker => ({ trackers: tracker }))
-                            }, updatedEntry)
-                        }
+                        // if (!objectEquals(entry, dbEntry, {strict: true})) {
+                        const updatedEntry = updateLatestEntries(dbEntry, entry)
+                        await db.setDatabaseEntry(MediaType.IMAGE, { ...updatedEntry, _id: id })
+                        // }
                     }
                     imageDbProgress.increment()
                     res()
@@ -320,6 +343,7 @@ async function update() {
         }
         res()
     })
+    */
     await new Promise<void>(async (res) => {
         for (let index = 0; index < videoEntries.length; index += 50) {
             const time = Date.now()
@@ -328,20 +352,19 @@ async function update() {
             await Promise.all(
                 chunk.map(entry => new Promise<void>(async (res) => {
                     let dbEntry = await db.getDatabaseEntry({
-                        $or: entry.trackers.map(tracker => ({ trackers: tracker }))
+                        $or: entry.trackers.filter(tracker => tracker.id === "myanimelist" || tracker.id === "anilist").map(tracker => ({ trackers: tracker }))
                     }, MediaType.VIDEO) as Entry & { _id?: MUUID } | null
                     if (dbEntry === null) {
                         await db.addDatabaseEntry(MediaType.VIDEO, entry)
                         newVideoEntryCount++
                         newEntries.video.push(entry.title)
                     } else {
+                        const id = dbEntry._id!
                         delete dbEntry._id
-                        if (!objectEquals(entry, dbEntry, {strict: true})) {
-                            const updatedEntry = updateLatestEntries(dbEntry, entry)
-                            await db.setDatabaseEntryByQuery(MediaType.VIDEO, {
-                                $or: updatedEntry.trackers.map(tracker => ({ trackers: tracker }))
-                            }, updatedEntry)
-                        }
+                        //if (!objectEquals(entry, dbEntry, {strict: true})) {
+                        const updatedEntry = updateLatestEntries(dbEntry, entry)
+                        await db.setDatabaseEntry(MediaType.VIDEO, { ...updatedEntry, _id: id })
+                        //}
                     }
                     videoDbProgress.increment()
                     res()

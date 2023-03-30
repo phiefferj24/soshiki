@@ -3,7 +3,7 @@
   "packageManager": "yarn@3.2.2",
   "dependencies": {
     "jsonwebtoken": "^9.0.0",
-    "meinu": "^5.4.9"
+    "meinu": "^6.0.4"
   },
   "scripts": {
     "start": "vite-node src/index.ts"

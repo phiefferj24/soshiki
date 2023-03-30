@@ -11,16 +11,12 @@ export let database: Database
 
 export class SoshikiBot extends Meinu {
     static async start(): Promise<SoshikiBot> {
-        const instance = new SoshikiBot({
+        database = await Database.connect()
+        return await new SoshikiBot({
             color: '#d84498',
             owners: ['531136800694075413'],
-            specificGuildId: '1001523245691969590',
-            name: 'Soshiki',
-            guildCommands: [testflight, sourcelist, trackerlist]
-        })
-        await instance.init(process.env.TOKEN)
-        database = await Database.connect()
-        return instance
+            name: 'Soshiki'
+        }).register_commands([testflight, sourcelist, trackerlist]).init(process.env.TOKEN)
     }
 }
 
