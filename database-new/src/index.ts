@@ -105,13 +105,15 @@ export class Database {
     entries: EntryCollections
     users: Collection
     testflight: Collection
+    testflight_alpha: Collection
     client: MongoClient
 
-    private constructor(client: MongoClient, entries: EntryCollections, users: Collection, testflight: Collection) {
+    private constructor(client: MongoClient, entries: EntryCollections, users: Collection, testflight: Collection, testflight_alpha: Collection) {
         this.client = client
         this.entries = entries
         this.users = users
         this.testflight = testflight
+        this.testflight_alpha = testflight_alpha
     }
 
     static async connect(): Promise<Database> {
@@ -125,7 +127,7 @@ export class Database {
             text: db.collection(process.env.TEXT_COLLECTION_NAME!),
             image: db.collection(process.env.IMAGE_COLLECTION_NAME!),
             video: db.collection(process.env.VIDEO_COLLECTION_NAME!)
-        }, db.collection(process.env.USERS_COLLECTION_NAME!), db.collection(process.env.TESTFLIGHT_COLLECTION_NAME!))
+        }, db.collection(process.env.USERS_COLLECTION_NAME!), db.collection(process.env.TESTFLIGHT_COLLECTION_NAME!), db.collection(process.env.TESTFLIGHT_ALPHA_COLLECTION_NAME!))
     }
 
     collectionForType(mediaType: MediaType): Collection {
@@ -204,6 +206,24 @@ export class Database {
         if (typeof discord === 'string') query['discord'] = discord
         if (typeof id === 'string') query['id'] = id
         await this.testflight.deleteOne(query)
+    }
+
+    async getTestflightAlphaUser(discord: string | undefined, id: string | undefined): Promise<TestflightUser | null> {
+        const query: {[key: string]: string} = {}
+        if (typeof discord === 'string') query['discord'] = discord
+        if (typeof id === 'string') query['id'] = id
+        return await this.testflight_alpha.findOne(query) as any as TestflightUser
+    }
+
+    async addTestflightAlphaUser(discord: string, email: string, id: string): Promise<void> {
+        await this.testflight_alpha.insertOne({ discord, email, id })
+    }
+
+    async removeTestflightAlphaUser(discord: string | undefined, id: string | undefined): Promise<void> {
+        const query: {[key: string]: string} = {}
+        if (typeof discord === 'string') query['discord'] = discord
+        if (typeof id === 'string') query['id'] = id
+        await this.testflight_alpha.deleteOne(query)
     }
 
     async close() {

@@ -282,7 +282,6 @@ async function update() {
     let newImageEntryCount = 0
     let newVideoEntryCount = 0
     let newEntries: { text: string[], image: string[], video: string[] } = { text: [], image: [], video: [] }
-    /*
     await new Promise<void>(async (res) => {
         for (let index = 0; index < textEntries.length; index += 50) {
             const time = Date.now()
@@ -343,7 +342,6 @@ async function update() {
         }
         res()
     })
-    */
     await new Promise<void>(async (res) => {
         for (let index = 0; index < videoEntries.length; index += 50) {
             const time = Date.now()
