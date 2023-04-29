@@ -2,6 +2,7 @@
   "name": "soshiki-bot",
   "packageManager": "yarn@3.2.2",
   "dependencies": {
+    "apple-connect": "^1.6.1",
     "jsonwebtoken": "^9.0.0",
     "meinu": "^6.0.4"
   },

@@ -40,7 +40,7 @@ export default new Command({
             algorithm: 'ES256'
         })
         if (tfUser !== null) {
-            await fetch(`https://api.appstoreconnect.apple.com/v1/betaTesters/${tfUser.id}`, {
+            const response = await fetch(`https://api.appstoreconnect.apple.com/v1/betaTesters/${tfUser.id}`, {
                 method: "DELETE",
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -49,6 +49,12 @@ export default new Command({
                 console.error(error)
                 return null
             })
+            if (response?.status !== 204) {
+                return int.reply({
+                    content: "An error occurred. Try again, and if that fails, ping JimIsWayTooEpic.",
+                    ephemeral: true
+                })
+            }
             await database.removeTestflightUser(int.user.id, undefined)
             return int.reply({
                 content: "Removed from the TestFlight.",
