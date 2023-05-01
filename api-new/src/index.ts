@@ -48,6 +48,7 @@ app.use(async (req, res, next) => {
             return
         }
         const verified = jwt.verify(bearer.substring('Bearer '.length), PUBLIC_KEY) as any;
+        console.log("YOU" + JSON.stringify(verified, null, 2))
         if (typeof verified?.access === 'undefined') {
             res.status(401).send("Incorrect bearer token provided.")
             return
@@ -55,7 +56,9 @@ app.use(async (req, res, next) => {
         (req as any).userId = verified.id
         next()
     } catch (error) {
-        if (error instanceof jwt.TokenExpiredError) res.status(401).send("Token has expired.")
+        if (error instanceof jwt.TokenExpiredError) {res.status(401).send("Token has expired.")
+        console.log("token expired")
+    }
         else if (error instanceof jwt.NotBeforeError) res.status(401).send("Token is not active.")
         else if (error instanceof jwt.JsonWebTokenError) res.status(401).send("Token is invalid.")
         else res.status(500).send()
@@ -84,7 +87,7 @@ function isValidContentRating(contentRating: string) {
 
 { // entry
     app.get("/entry/:mediaType/link", async (req, res) => {
-        if (typeof req.query.platformId !== 'string' || typeof req.query.sourceId !== 'string' || typeof req.query.entryId !== 'string' ) {
+        if (typeof req.query.entryId !== 'string' ) {
             res.status(400).send("Missing query field.")
             return
         }
@@ -97,14 +100,26 @@ function isValidContentRating(contentRating: string) {
             res.status(400).send("Offset must be positive.")
             return
         }
-        const entries = await database.aggregateDatabaseEntries([
-            { $match: { platforms: { $elemMatch: { id: req.query.platformId as string } } } },
-            { $match: { platforms: { $elemMatch: { sources: { $elemMatch: { $and: [
-                { id: req.query.sourceId as string },
-                { entryId: req.query.entryId as string }
-            ] } } } } } }
-        ], mediaType(req.params.mediaType)!, limit, offset)
-        res.status(200).send(entries)
+        if (typeof req.query.platformId === 'string' && typeof req.query.sourceId === 'string') {
+            const entries = await database.aggregateDatabaseEntries([
+                { $match: { platforms: { $elemMatch: { id: req.query.platformId as string } } } },
+                { $match: { platforms: { $elemMatch: { sources: { $elemMatch: { $and: [
+                    { id: req.query.sourceId as string },
+                    { entryId: req.query.entryId as string }
+                ] } } } } } }
+            ], mediaType(req.params.mediaType)!, limit, offset)
+            res.status(200).send(entries)
+        } else if (typeof req.query.trackerId === 'string') {
+            const entries = await database.aggregateDatabaseEntries([
+                { $match: { trackers: { $elemMatch: { $and: [
+                    { id: req.query.trackerId as string },
+                    { entryId: req.query.entryId as string }
+                ] } } } }
+            ], mediaType(req.params.mediaType)!, limit, offset)
+            res.status(200).send(entries)
+        } else {
+            res.status(400).send("Missing query field")
+        }
     })
 
     app.get("/entry/:mediaType/:id", async (req, res) => {
@@ -482,7 +497,7 @@ function isValidContentRating(contentRating: string) {
             refresh: data.refresh_token
         }, PRIVATE_KEY, {
             algorithm: 'RS256',
-            expiresIn: data.expires_in * 2 // refresh should last 14 days, or twice discord's refresh
+            expiresIn: 60 * 60 * 24 * 90
         })
         const redirectUrl = req.query.state
         if (typeof redirectUrl === 'string') {
@@ -541,7 +556,7 @@ function isValidContentRating(contentRating: string) {
                 refresh: data.refresh_token
             }, PRIVATE_KEY, {
                 algorithm: 'RS256',
-                expiresIn: data.expires_in * 2 // refresh should last 14 days, or twice discord's refresh
+                expiresIn: 60 * 60 * 24 * 90
             })
             res.status(200).send({
                 access: generatedAccess,

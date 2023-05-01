@@ -12,3 +12,4 @@ node_modules/
 **/*.token
 database-new/MAL-Sync-Backup
 database-new/new.json
+*.pem
