@@ -49,12 +49,6 @@ export default new Command({
                 console.error(error)
                 return null
             })
-            if (response?.status !== 204) {
-                return int.reply({
-                    content: "An error occurred. Try again, and if that fails, ping JimIsWayTooEpic.",
-                    ephemeral: true
-                })
-            }
             await database.removeTestflightUser(int.user.id, undefined)
             return int.reply({
                 content: "Removed from the TestFlight.",
