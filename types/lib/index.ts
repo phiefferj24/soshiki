@@ -324,6 +324,8 @@ export type History = {
     timestamp?: number,
     /** The episode that the user is currently on, if applicable. */
     episode?: number,
+    /** The season that the user is currently on, if applicable. */
+    season?: number,
     /** The percent of the text that has been read, if applicable. */
     percent?: number,
     /** The score that the user has given the entry, if one has been given. */

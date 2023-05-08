@@ -286,6 +286,7 @@ function isValidContentRating(contentRating: string) {
                 case 'volume': if (typeof param[1] === 'string' && !isNaN(parseFloat(param[1]))) newHistory.volume = parseFloat(param[1]); break
                 case 'timestamp': if (typeof param[1] === 'string' && !isNaN(parseInt(param[1]))) newHistory.timestamp = parseInt(param[1]); break
                 case 'episode': if (typeof param[1] === 'string' && !isNaN(parseFloat(param[1]))) newHistory.episode = parseFloat(param[1]); break
+                case 'season': if (typeof param[1] === 'string' && !isNaN(parseFloat(param[1]))) newHistory.season = parseFloat(param[1]); break
                 case 'percent': if (typeof param[1] === 'string' && !isNaN(parseFloat(param[1]))) newHistory.percent = parseFloat(param[1]); break
                 case 'score': if (typeof param[1] === 'string' && !isNaN(parseFloat(param[1]))) newHistory.score = parseFloat(param[1]); break
                 case 'status': if (typeof param[1] === 'string' && isValidHistoryStatus(param[1])) newHistory.status = param[1].toUpperCase()
