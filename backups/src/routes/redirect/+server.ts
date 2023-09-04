@@ -40,7 +40,7 @@ export const GET: RequestHandler = async ({url, locals}) => {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: `grant_type=authorization_code&code=${url.searchParams.get("code")}&redirect_uri=${encodeURIComponent(url.href.split("?")[0])}&client_id=${process.env.DISCORD_ID}&client_secret=${process.env.DISCORD_SECRET}`
+        body: `grant_type=authorization_code&code=${url.searchParams.get("code")}&redirect_uri=${"https://backups.soshiki.moe/redirect"}&client_id=${process.env.DISCORD_ID}&client_secret=${process.env.DISCORD_SECRET}`
     }).then(res => res.json())
     const user = await fetch(`https://discord.com/api/users/@me`, { headers: { Authorization: `Bearer ${data.access_token}` } }).then(res => res.json())
     const dbUser = await locals.db.getUser({ discord: user.id }) as User
@@ -221,7 +221,7 @@ export const GET: RequestHandler = async ({url, locals}) => {
         status: 200,
         headers: {
             "Content-Type": "application/json",
-            "Content-Disposition": "attachment; filename=backup1.json"
+            "Content-Disposition": "attachment; filename=backup.soshikibackup"
         }
     })
 };
