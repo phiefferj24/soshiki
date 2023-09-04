@@ -14,14 +14,14 @@ export default new Command({
     description: "Sends the TestFlight Alpha invite message"
 }).addHandler('button', async (bot, int) => {
     if (int.customId === 'testflight_alpha-inviteButton') {
-        const tfBetaUser = await database.getTestflightUser(int.user.id, undefined)
+        const tfBetaUser = await database.getTestflightUser(int.user as unknown as string, undefined)
         if (tfBetaUser === null) {
             return int.reply({
                 content: "You need to be in the beta TestFlight group first before you can join the alpha.",
                 ephemeral: true
             })
         }
-        const tfUser = await database.getTestflightAlphaUser(int.user.id, undefined)
+        const tfUser = await database.getTestflightAlphaUser(int.user as unknown as string, undefined)
         const token = jwt.sign({
             iss: process.env.TESTFLIGHT_ISSUER,
             iat: new Date().getTime() / 1000,
@@ -107,7 +107,7 @@ export default new Command({
                 console.error(error)
                 return null
             })
-            await database.removeTestflightAlphaUser(int.user.id, undefined)
+            await database.removeTestflightAlphaUser(int.user as unknown as string, undefined)
             return int.reply({
                 content: "Removed from the alpha TestFlight group.",
                 ephemeral: true

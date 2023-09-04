@@ -3,8 +3,9 @@
   "packageManager": "yarn@3.2.2",
   "dependencies": {
     "apple-connect": "^1.6.1",
+    "discord.js": "14.11.0",
     "jsonwebtoken": "^9.0.0",
-    "meinu": "^6.0.4"
+    "meinu": "^6.0.6"
   },
   "scripts": {
     "start": "vite-node src/index.ts"

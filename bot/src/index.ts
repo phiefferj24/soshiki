@@ -17,7 +17,7 @@ export class SoshikiBot extends Meinu {
             color: '#d84498',
             owners: ['531136800694075413'],
             name: 'Soshiki'
-        }).register_commands([testflight, testflight_alpha, sourcelist, trackerlist]).init(process.env.TOKEN)
+        }).register_commands([testflight, testflight_alpha, sourcelist, trackerlist]).init(process.env.TOKEN_DEVELOPMENT)
     }
 }
 
